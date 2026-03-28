@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<TabPane xmlns="http://javafx.com/javafx/17.0.12"
+         xmlns:fx="http://javafx.com/fxml/1"
+         fx:controller="com.pharmacy.iposca.ui.SupplierView"
+         prefHeight="700.0" prefWidth="1000.0"
+         tabClosingPolicy="UNAVAILABLE">
+
+    <!-- Tab 1: Supplier Catalogue -->
+    <Tab text="Supplier Catalogue" closable="false">
+        <VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;">
+
+            <!-- Header -->
+            <Label text="IPOS-SA Supplier Catalogue"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+            <Separator/>
+
+            <!-- Search & Filter -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Search:" style="-fx-font-weight: bold;"/>
+                <TextField fx:id="searchField" promptText="Search by Item ID or Description..."
+                           prefWidth="300"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="Category:" style="-fx-font-weight: bold;"/>
+                <ComboBox fx:id="categoryFilter" prefWidth="150"/>
+            </HBox>
+
+            <!-- Catalogue Table -->
+            <TableView fx:id="catalogueTable" VBox.vgrow="ALWAYS"
+                       style="-fx-background-color: white; -fx-border-color: #ddd;">
+                <columns>
+                    <TableColumn fx:id="itemIdCol" text="Item ID" prefWidth="100"/>
+                    <TableColumn fx:id="descriptionCol" text="Description" prefWidth="200"/>
+                    <TableColumn fx:id="packageTypeCol" text="Package Type" prefWidth="100"/>
+                    <TableColumn fx:id="unitCol" text="Unit" prefWidth="60"/>
+                    <TableColumn fx:id="unitsPerPackCol" text="Units/Pack" prefWidth="80"/>
+                    <TableColumn fx:id="packageCostCol" text="Package Cost" prefWidth="120"/>
+                    <TableColumn fx:id="availabilityCol" text="Availability" prefWidth="100"/>
+                </columns>
+            </TableView>
+
+            <!-- Action Buttons -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button text="Add to Order" onAction="#addToOrder"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30;"/>
+                <Button text="Remove from Order" onAction="#removeFromOrder"
+                        style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30;"/>
+                <Label fx:id="selectionInfoLabel" style="-fx-text-fill: #7f8c8d;"/>
+            </HBox>
+
+            <!-- Order Cart Panel -->
+            <TitledPane text="Current Order" expanded="true">
+                <VBox spacing="10">
+                    <TableView fx:id="cartTable" prefHeight="200">
+                        <columns>
+                            <TableColumn fx:id="cartItemIdCol" text="Item ID" prefWidth="100"/>
+                            <TableColumn fx:id="cartDescCol" text="Description" prefWidth="200"/>
+                            <TableColumn fx:id="cartQtyCol" text="Quantity" prefWidth="80"/>
+                            <TableColumn fx:id="cartCostCol" text="Unit Cost" prefWidth="100"/>
+                            <TableColumn fx:id="cartTotalCol" text="Total" prefWidth="100"/>
+                        </columns>
+                    </TableView>
+
+                    <HBox spacing="20" alignment="CENTER_LEFT">
+                        <Label fx:id="orderTotalLabel" text="Grand Total: 0.00"
+                               style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="Clear Order" onAction="#clearOrder"
+                                style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                        <Button text="Submit Order to IPOS-SA" onAction="#submitOrder"
+                                style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                    </HBox>
+                </VBox>
+            </TitledPane>
+
+            <Label fx:id="catalogueInfoLabel" style="-fx-text-fill: green; -fx-font-weight: bold;"/>
+        </VBox>
+    </Tab>
+
+    <!-- Tab 2: Order History -->
+    <Tab text="Order History" closable="false">
+        <VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;">
+
+            <Label text="Order History &amp; Tracking"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+            <Separator/>
+
+            <!-- Orders Table -->
+            <TableView fx:id="ordersTable" VBox.vgrow="ALWAYS"
+                       style="-fx-background-color: white; -fx-border-color: #ddd;">
+                <columns>
+                    <TableColumn fx:id="orderIdCol" text="Order ID" prefWidth="100"/>
+                    <TableColumn fx:id="orderDateCol" text="Ordered" prefWidth="100"/>
+                    <TableColumn fx:id="amountCol" text="Amount" prefWidth="100"/>
+                    <TableColumn fx:id="dispatchedCol" text="Dispatched" prefWidth="100"/>
+                    <TableColumn fx:id="deliveredCol" text="Delivered" prefWidth="100"/>
+                    <TableColumn fx:id="paidCol" text="Paid" prefWidth="100"/>
+                </columns>
+            </TableView>
+
+            <!-- Action Buttons -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button text="Refresh Orders" onAction="#refreshOrders"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+                <Button text="Orders Summary Report" onAction="#generateOrdersSummaryReport"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+                <Button text="Detailed Order Report" onAction="#generateDetailedOrderReport"
+                        style="-fx-background-color: #9b59b6; -fx-text-fill: white;"/>
+            </HBox>
+
+            <Label fx:id="ordersInfoLabel" style="-fx-text-fill: green; -fx-font-weight: bold;"/>
+        </VBox>
+    </Tab>
+
+    <!-- Tab 3: Outstanding Balance -->
+    <Tab text="Outstanding Balance" closable="false">
+        <VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;">
+
+            <Label text="Outstanding Balance Query"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+            <Separator/>
+
+            <!-- Balance Display -->
+            <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-border-color: #e74c3c; -fx-border-width: 2;">
+                <Label fx:id="balanceLabel" text="Total Outstanding: 0.00"
+                       style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #e74c3c;"/>
+                <Label text="This represents unpaid invoices from IPOS-SA"
+                       style="-fx-text-fill: #7f8c8d;"/>
+            </VBox>
+
+            <!-- Invoices Table -->
+            <Label text="Invoice Details" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+
+            <TableView fx:id="invoicesTable" prefHeight="300"
+                       style="-fx-background-color: white; -fx-border-color: #ddd;">
+                <columns>
+                    <TableColumn fx:id="invoiceIdCol" text="Invoice ID" prefWidth="100"/>
+                    <TableColumn fx:id="invoiceOrderIdCol" text="Order ID" prefWidth="100"/>
+                    <TableColumn fx:id="invoiceDateCol" text="Invoice Date" prefWidth="100"/>
+                    <TableColumn fx:id="invoiceAmountCol" text="Amount" prefWidth="100"/>
+                    <TableColumn fx:id="paidAmountCol" text="Paid" prefWidth="100"/>
+                    <TableColumn fx:id="balanceCol" text="Outstanding" prefWidth="100"/>
+                    <TableColumn fx:id="invoiceStatusCol" text="Status" prefWidth="100"/>
+                </columns>
+            </TableView>
+
+            <!-- Action Buttons -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button text="Refresh Orders" onAction="#refreshOrders"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+
+                <!-- ✅ ADD THIS: Mark as Paid Button -->
+                <Button text="Mark as Paid" onAction="#markSelectedAsPaid"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+
+                <Button text="Orders Summary Report" onAction="#generateOrdersSummaryReport"
+                        style="-fx-background-color: #9b59b6; -fx-text-fill: white;"/>
+                <Button text="Detailed Order Report" onAction="#generateDetailedOrderReport"
+                        style="-fx-background-color: #e67e22; -fx-text-fill: white;"/>
+            </HBox>
+
+            <Label fx:id="balanceInfoLabel" style="-fx-text-fill: green; -fx-font-weight: bold;"/>
+        </VBox>
+    </Tab>
+
+</TabPane>

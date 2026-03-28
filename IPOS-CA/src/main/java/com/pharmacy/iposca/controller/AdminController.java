@@ -1,0 +1,215 @@
+package com.pharmacy.iposca.controller;
+
+import com.pharmacy.iposca.db.DatabaseConnector;
+import com.pharmacy.iposca.model.User;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
+import java.sql.*;
+
+/**
+ * All user data is loaded from and saved to MySQL database
+ */
+public class AdminController {
+
+    private static AdminController instance;
+    private ObservableList<User> users = FXCollections.observableArrayList();
+
+    private AdminController() {
+        loadUsersFromDatabase();
+    }
+
+    public static synchronized AdminController getInstance() {
+        if (instance == null) {
+            instance = new AdminController();
+        }
+        return instance;
+    }
+
+    /**
+     * Load users from MySQL database
+     */
+    private void loadUsersFromDatabase() {
+        String sql = "SELECT id, username, full_name, password, role, active FROM users";
+
+        try (Connection conn = DatabaseConnector.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            users.clear();
+            while (rs.next()) {
+                User user = new User(
+                        rs.getInt("id"),
+                        rs.getString("username"),
+                        rs.getString("full_name"),
+                        rs.getString("password"),
+                        rs.getString("role")
+                );
+                user.setActive(rs.getBoolean("active"));
+                users.add(user);
+            }
+
+            System.out.println("Loaded " + users.size() + " users from database");
+
+        } catch (SQLException e) {
+            System.err.println("Error loading users: " + e.getMessage());
+            e.printStackTrace();
+            // Fallback to mock data if database fails
+            loadMockUsers();
+        }
+    }
+
+    /**
+     * Fallback mock data if database connection fails
+     */
+    private void loadMockUsers() {
+        users.addAll(
+                new User(1001, "admin", "System Administrator", "admin123", User.Admin),
+                new User(1002, "pharmacist", "John Pharmacist", "pharm123", User.Pharmacist),
+                new User(1003, "manager", "Mike Manager", "mgr123", User.Manager)
+        );
+        System.out.println("Using mock user data (database connection failed)");
+    }
+
+    public ObservableList<User> getUsers() {
+        return users;
+    }
+
+    /**
+     * Create new user and save to database
+     */
+    public boolean createUser(String username, String fullName, String password, String role) {
+        // Check if username exists
+        for (User u : users) {
+            if (u.getUsername().equals(username)) {
+                System.out.println("❌ Username already exists: " + username);
+                return false;
+            }
+        }
+
+        String sql = "INSERT INTO users (username, full_name, password, role, active) VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            stmt.setString(1, username);
+            stmt.setString(2, fullName);
+            stmt.setString(3, password);
+            stmt.setString(4, role);
+            stmt.setBoolean(5, true);
+
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                // Get generated ID
+                ResultSet rs = stmt.getGeneratedKeys();
+                int newId = 0;
+                if (rs.next()) {
+                    newId = rs.getInt(1);
+                }
+
+                // Add to local cache
+                User newUser = new User(newId, username, fullName, password, role);
+                users.add(newUser);
+
+                System.out.println("✅ User created: " + username);
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error creating user: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    /**
+     * Delete user from database
+     */
+    public boolean deleteUser(User user) {
+        if (user == null) return false;
+
+        String sql = "DELETE FROM users WHERE id = ?";
+
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, user.getId());
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                users.remove(user);
+                System.out.println("✅ User deleted: " + user.getUsername());
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error deleting user: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    /**
+     * Toggle user active status and save to database
+     */
+    public boolean toggleStatus(User user) {
+        if (user == null) return false;
+
+        String sql = "UPDATE users SET active = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            boolean newStatus = !user.isActive();
+            stmt.setBoolean(1, newStatus);
+            stmt.setInt(2, user.getId());
+
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                user.setActive(newStatus);
+                System.out.println("✅ User status updated: " + user.getUsername() + " = " + newStatus);
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error updating user status: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    /**
+     * Update user password in database - TEST FEATURE - TRY IMPLEMENT IF WANTED BUT NOT TRULY NEEDED
+     */
+    public boolean updatePassword(User user, String newPassword) {
+        if (user == null) return false;
+
+        String sql = "UPDATE users SET password = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, newPassword);
+            stmt.setInt(2, user.getId());
+
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                user.setPassword(newPassword);
+                System.out.println("Password updated for: " + user.getUsername());
+                return true;
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error updating password: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+}
