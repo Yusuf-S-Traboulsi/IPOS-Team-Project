@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" style="-fx-padding: 20;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.pharmacy.iposca.ui.InventoryView">
+
+    <HBox spacing="20" alignment="CENTER_LEFT">
+        <Label text="Product Catalogue &amp; Inventory" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+        <Region HBox.hgrow="ALWAYS" />
+        <Label text="VAT %:" />
+        <TextField fx:id="vatField" prefWidth="60" />
+    </HBox>
+
+    <TextField fx:id="searchField" promptText="Search by ID or Name..." />
+
+    <TableView fx:id="inventoryTable" editable="true" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="idCol" text="ID" prefWidth="50" />
+            <TableColumn fx:id="nameCol" text="Product Name" prefWidth="150" />
+            <TableColumn fx:id="bulkCostCol" text="Bulk Cost (£)" prefWidth="100" />
+            <TableColumn fx:id="markupCol" text="Markup Rate" prefWidth="100" />
+            <TableColumn fx:id="priceCol" text="Retail Price (Inc VAT)" prefWidth="130" />
+            <TableColumn fx:id="stockCol" text="Stock Level" prefWidth="80" />
+            <TableColumn fx:id="thresholdCol" text="Min Threshold" prefWidth="100" />
+        </columns>
+    </TableView>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Generate Low Stock Report" onAction="#generateLowStockReport" style="-fx-background-color: #34495e; -fx-text-fill: white;" />
+        <Region HBox.hgrow="ALWAYS" />
+        <Button text="Delete Selected Item" onAction="#handleDeleteProduct" style="-fx-background-color: #e74c3c; -fx-text-fill: white;" />
+        <Button text="Add New Product" onAction="#handleAddProduct" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;" />
+    </HBox>
+
+</VBox>

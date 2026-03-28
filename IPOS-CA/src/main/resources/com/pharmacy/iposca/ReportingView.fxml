@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane prefHeight="600" prefWidth="900" style="-fx-background-color: #f5f5f5;"
+            xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.pharmacy.iposca.ui.ReportingView">
+
+    <center>
+        <VBox spacing="15" style="-fx-padding: 15;">
+
+            <!-- Date Range Selection -->
+            <TitledPane expanded="true" style="-fx-font-weight: bold;" text="Report Period">
+                <HBox alignment="CENTER_LEFT" spacing="20">
+                    <Label style="-fx-font-weight: bold;" text="Start Date:" />
+                    <DatePicker fx:id="startDatePicker" prefWidth="150" />
+
+                    <Label style="-fx-font-weight: bold;" text="End Date:" />
+                    <DatePicker fx:id="endDatePicker" prefWidth="150" />
+
+                    <Region HBox.hgrow="ALWAYS" />
+
+                    <Button onAction="#generateAllReports"
+                            style="-fx-background-color: #8e44ad; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 3;"
+                            text="Generate All Reports" />
+                </HBox>
+            </TitledPane>
+
+            <!-- Report Cards Grid (2 columns) -->
+            <GridPane hgap="15" vgap="15">
+
+                <!-- Column constraints: 2 equal-width columns -->
+                <columnConstraints>
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50.0" />
+                    <ColumnConstraints hgrow="ALWAYS" percentWidth="50.0" />
+                </columnConstraints>
+
+                <!-- Row 0: Turnover Report (Column 0) -->
+                <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 4; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 1);"
+                      GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Label style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Turnover Report" />
+                    <Label style="-fx-font-size: 10; -fx-text-fill: #7f8c8d;" text="Sales amount and new order values within selected period" wrapText="true" />
+                    <Separator />
+                    <VBox spacing="8">
+                        <Label style="-fx-font-size: 10; -fx-font-weight: bold;" text="Includes:" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="• Cash and card sales breakdown" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="• Transaction details with dates" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="• Grand total calculation" />
+                    </VBox>
+                    <Button onAction="#generateTurnoverReport" prefHeight="32"
+                            style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 3; -fx-cursor: hand;"
+                            text="Generate Turnover Report" />
+                </VBox>
+
+                <!-- Row 0: Stock Report (Column 1) -->
+                <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 4; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 1);"
+                      GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Label style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Stock Availability Report" />
+                    <Label style="-fx-font-size: 10; -fx-text-fill: #7f8c8d;" text="Current inventory levels and valuation" wrapText="true" />
+                    <Separator />
+                    <VBox spacing="8">
+                        <Label style="-fx-font-size: 10; -fx-font-weight: bold;" text="Includes:" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="• Item-wise stock quantities" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="• Value excluding VAT" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="• VAT amount and total value" />
+                    </VBox>
+                    <Button onAction="#generateStockReport" prefHeight="32"
+                            style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 3; -fx-cursor: hand;"
+                            text="Generate Stock Report" />
+                </VBox>
+
+                <!-- Row 1: Debt Change Report (Spans both columns) -->
+                <VBox spacing="10" style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 4; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 1);"
+                      GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                    <Label style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Aggregated Debt Change Report" />
+                    <Label style="-fx-font-size: 10; -fx-text-fill: #7f8c8d;" text="Account holder debt movement within selected period" wrapText="true" />
+                    <Separator />
+
+                    <GridPane hgap="30" vgap="5">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="40.0" />
+                            <ColumnConstraints percentWidth="60.0" />
+                        </columnConstraints>
+
+                        <Label style="-fx-font-size: 10; -fx-font-weight: bold;" text="Opening Debt:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="Total debt at start of period" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                        <Label style="-fx-font-size: 10; -fx-font-weight: bold;" text="Payments Received:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="Amount collected from debtors" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                        <Label style="-fx-font-size: 10; -fx-font-weight: bold;" text="Closing Debt:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <Label style="-fx-font-size: 9; -fx-text-fill: #555;" text="Total debt at end of period" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                    </GridPane>
+
+                    <Button onAction="#generateDebtReport" prefHeight="32"
+                            style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 3; -fx-cursor: hand;"
+                            text="Generate Debt Change Report" />
+                </VBox>
+
+            </GridPane>
+
+        </VBox>
+    </center>
+
+    <!-- Footer -->
+    <bottom>
+        <Label alignment="CENTER_RIGHT" maxWidth="Infinity"
+               style="-fx-padding: 6 15; -fx-background-color: #ecf0f1; -fx-font-size: 9; -fx-text-fill: #7f8c8d;"
+               text="Reports are generated as HTML files and opened in your default browser" />
+    </bottom>
+
+</BorderPane>

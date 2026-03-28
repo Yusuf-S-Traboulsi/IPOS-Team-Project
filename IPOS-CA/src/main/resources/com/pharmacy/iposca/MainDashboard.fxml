@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<BorderPane prefHeight="700.0" prefWidth="1000.0"
+            xmlns="http://javafx.com/javafx/17.0.12"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.pharmacy.iposca.controller.MainDashboardController">
+
+    <left>
+        <VBox fx:id="sidebar" spacing="10"
+              style="-fx-background-color: #2c3e50; -fx-padding: 15;">
+
+            <!-- App Title -->
+            <Text fill="WHITE" text="IPOS-CA SYSTEM">
+                <font><Font name="System Bold" size="18.0" /></font>
+            </Text>
+
+            <!-- Top Separator -->
+            <Separator style="-fx-background-color: #ecf0f1;"/>
+
+            <!-- Navigation Buttons (populated by controller based on role) -->
+            <VBox fx:id="navButtons" spacing="10" VBox.vgrow="ALWAYS">
+                <Button fx:id="posBtn" maxWidth="Infinity" onAction="#showPOS" text="POS / Sales"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
+                <Button fx:id="inventoryBtn" maxWidth="Infinity" onAction="#showInventory" text="Inventory"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
+                <Button fx:id="customerBtn" maxWidth="Infinity" onAction="#showCustomers" text="Customer Management"
+                        style="-fx-background-color: #e67e22; -fx-text-fill: white;"/>
+
+                <Button fx:id="supplierBtn" maxWidth="Infinity" onAction="#showSuppliers" text="Suppliers"
+                        style="-fx-background-color: #28dfea; -fx-text-fill: white;"/>
+                <!-- Discount Settings Button (Manager & Pharmacist only) -->
+                <Button fx:id="discountBtn" maxWidth="Infinity"
+                        onAction="#showDiscountSettings"
+                        text="Discount Settings"
+                        style="-fx-background-color: #9b59b6; -fx-text-fill: white;"/>
+                <!-- Templates Button (Manager only) -->
+                <Button fx:id="templatesBtn" maxWidth="Infinity"
+                        onAction="#showTemplates"
+                        text="Templates"
+                        style="-fx-background-color: #e84393; -fx-text-fill: white;"/>
+                <Button fx:id="adminBtn" maxWidth="Infinity" onAction="#showAdmin" text="Admin"
+                        style="-fx-background-color: #e74c3c; -fx-text-fill: white;"/>
+                <Button fx:id="reportBtn" maxWidth="Infinity" onAction="#showReports" text="Reports"
+                        style="-fx-background-color: #1abc9c; -fx-text-fill: white;"/>
+            </VBox>
+
+            <!-- Bottom Separator -->
+            <Separator style="-fx-background-color: #ecf0f1; -fx-padding: 2 0;"/>
+
+            <!-- Logout Button at Bottom -->
+            <Button fx:id="logoutBtn"
+                    maxWidth="Infinity"
+                    onAction="#handleLogout"
+                    style="-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4;"
+                    text="Logout"/>
+
+        </VBox>
+    </left>
+
+    <center>
+        <StackPane fx:id="contentArea" style="-fx-background-color: #ecf0f1;">
+            <Label text="Welcome to the Pharmacy Management System"
+                   textFill="#7f8c8d"
+                   style="-fx-font-size: 16px;"/>
+        </StackPane>
+    </center>
+
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-background-color: #34495e; -fx-padding: 10;">
+            <Label fx:id="titleLabel" text="Dashboard" textFill="WHITE"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="userLabel" text="User: " textFill="#bdc3c7"
+                   style="-fx-font-size: 14px;"/>
+        </HBox>
+    </top>
+
+</BorderPane>

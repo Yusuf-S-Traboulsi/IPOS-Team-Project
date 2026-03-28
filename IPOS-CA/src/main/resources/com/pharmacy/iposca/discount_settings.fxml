@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;"
+      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.pharmacy.iposca.ui.DiscountSettingsView">
+
+    <!-- Title -->
+    <Label text="Discount Plan Management"
+           style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+    <Separator style="-fx-background-color: #bdc3c7;"/>
+
+    <!-- Customer Selection -->
+    <Label text="Select Customer:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+    <ComboBox fx:id="customerCombo" prefWidth="400" promptText="Choose account holder..."/>
+
+    <!-- Discount Plan Type -->
+    <Label text="Discount Plan Type:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+    <ComboBox fx:id="planTypeCombo" prefWidth="400"/>
+
+    <!-- Discount Rate -->
+    <Label text="Discount Rate (%):" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+    <TextField fx:id="discountRateField" prefWidth="400" promptText="Enter percentage (e.g., 10 for 10%)"/>
+
+    <!-- Action Buttons -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Button text="Apply Discount Plan" onAction="#handleApplyDiscount"
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"/>
+        <Button text="Reset Monthly Totals (New Month)" onAction="#handleResetMonthlyTotals"
+                style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"/>
+    </HBox>
+
+    <!-- Help Text -->
+    <Label text="FIXED Plan: Same discount rate for all purchases&#10;FLEXIBLE Plan: Discount varies by monthly spend (2%-15%)"
+           wrapText="true"
+           style="-fx-text-fill: #7f8c8d; -fx-font-size: 12px; -fx-background-color: #fef9e7; -fx-padding: 10; -fx-background-radius: 5;"/>
+
+    <!-- Info Label -->
+    <Label fx:id="infoLabel" wrapText="true"
+           style="-fx-text-fill: #27ae60; -fx-font-size: 13px; -fx-font-weight: bold;"/>
+
+</VBox>
