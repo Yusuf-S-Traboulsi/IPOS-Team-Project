@@ -1,6 +1,7 @@
 package com.pharmacy.iposca;
 
 import com.pharmacy.iposca.api.InventoryRestAPI;
+import com.pharmacy.iposca.api.SupplierRestAPI;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -11,7 +12,7 @@ import spark.Spark;
 
 /**
  * JavaFX Application Launcher for IPOS-CA Pharmacy Management System
- * Starts REST API in background and loads JavaFX UI
+ * Starts BOTH REST APIs in background and loads JavaFX UI
  */
 public class Launcher extends Application {
 
@@ -20,10 +21,22 @@ public class Launcher extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        // Start REST API in background thread
+        // ✅ Start IPOS-CA REST API (Port 4567) - Pharmacy System
         new Thread(() -> {
             InventoryRestAPI.start(4567);
         }).start();
+
+        // ✅ Start IPOS-SA REST API (Port 4568) - Supplier System
+        new Thread(() -> {
+            SupplierRestAPI.start(4568);
+        }).start();
+
+        // Wait for APIs to initialize
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         // Load JavaFX UI
         Parent root = FXMLLoader.load(getClass().getResource("/com/pharmacy/iposca/LoginView.fxml"));

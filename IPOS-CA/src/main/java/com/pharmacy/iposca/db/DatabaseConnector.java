@@ -5,28 +5,47 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Database Connector for Local MySQL Server
- * All teams connect to this same database
+ * Database Connector for IPOS-CA and IPOS-SA
+ *
+ * IPOS-CA: Pharmacy system (ipos_ca database)
+ * IPOS-SA: Supplier system (ipos_sa database) - SEPARATE!
  */
 public class DatabaseConnector {
 
-    private static final String URL = "jdbc:mysql://127.0.0.1:3306/ipos_ca?useSSL=false&allowPublicKeyRetrieval=true";
-    private static final String USER = "root";
-    private static final String PASSWORD = "Swim1234"; // Your MySQL root password
+    // IPOS-CA Database (Pharmacy System)
+    private static final String CA_URL = "jdbc:mysql://127.0.0.1:3306/ipos_ca?useSSL=false&allowPublicKeyRetrieval=true";
+    private static final String CA_USER = "root";
+    private static final String CA_PASSWORD = "Swim1234";
 
-    // Test connection on class load - i think
+    // IPOS-SA Database (Supplier System) - SEPARATE DATABASE!
+    private static final String SA_URL = "jdbc:mysql://127.0.0.1:3306/ipos_sa?useSSL=false&allowPublicKeyRetrieval=true";
+    private static final String SA_USER = "root";
+    private static final String SA_PASSWORD = "Swim1234";
+
     static {
         testConnection();
     }
 
     /**
-     * Establishes a connection to the local MySQL server.
+     * Get connection to IPOS-CA database (default)
      */
     public static Connection getConnection() throws SQLException {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-            return conn;
+            return DriverManager.getConnection(CA_URL, CA_USER, CA_PASSWORD);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("MySQL JDBC Driver not found.", e);
+        }
+    }
+
+    /**
+     * Get connection to IPOS-SA database (SEPARATE!)
+     * ONLY used by SupplierRestAPI
+     */
+    public static Connection getSAConnection() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection(SA_URL, SA_USER, SA_PASSWORD);
         } catch (ClassNotFoundException e) {
             throw new SQLException("MySQL JDBC Driver not found.", e);
         }
@@ -38,16 +57,15 @@ public class DatabaseConnector {
     public static void testConnection() {
         try {
             Connection conn = getConnection();
-            System.out.println("Connected to MySQL database at " + URL);
-            System.out.println("Database: ipos_ca");
-            System.out.println("User: " + USER);
+            System.out.println("✅ Connected to IPOS-CA database at " + CA_URL);
             conn.close();
+
+            Connection saConn = getSAConnection();
+            System.out.println("✅ Connected to IPOS-SA database at " + SA_URL);
+            saConn.close();
         } catch (SQLException e) {
-            System.err.println("FAILED to connect to MySQL database!");
-            System.err.println("Error: " + e.getMessage());
-            System.err.println("URL: " + URL);
-            System.err.println("User: " + USER);
-            System.err.println("Check: 1) MySQL running, 2) Password correct, 3) Database exists");
+            System.err.println("❌ FAILED to connect to database!");
+            System.err.println("   Error: " + e.getMessage());
         }
     }
 }
