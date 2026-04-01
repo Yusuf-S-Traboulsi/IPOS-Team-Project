@@ -1,0 +1,28 @@
+/* Default sidebar button */
+.sidebar-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-padding: 8 12;
+    -fx-background-radius: 8;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+}
+
+/* Hover effect */
+.sidebar-btn:hover {
+    -fx-background-color: #3d566e;
+}
+
+/* Active/selected button */
+.sidebar-btn-active {
+    -fx-background-color: #4a6a85;
+    -fx-font-weight: bold;
+}
+
+.sidebar-section-label {
+    -fx-text-fill: rgba(190,230,250,0.77);
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 16 0 6 4;
+}

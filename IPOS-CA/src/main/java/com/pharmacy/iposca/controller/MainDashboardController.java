@@ -8,12 +8,15 @@ import com.pharmacy.iposca.ui.SupplierLoginView;
 import com.pharmacy.iposca.ui.SupplierView;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -34,6 +37,8 @@ public class MainDashboardController {
     @FXML private Label titleLabel;
     @FXML private Label userLabel;
 
+
+
     // Navigation Buttons
     @FXML private Button posBtn;
     @FXML private Button inventoryBtn;
@@ -47,6 +52,16 @@ public class MainDashboardController {
     @FXML private Button logoutBtn;
 
     private User currentUser;
+
+
+    /**
+     * Helper method for section labels in sidebar
+     */
+    private Label createSectionLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("sidebar-section-label");
+        return label;
+    }
 
     /**
      * Apply role-based permissions to navigation buttons
@@ -66,6 +81,7 @@ public class MainDashboardController {
         // Role-specific button visibility
         if (user.isAdmin()) {
             // Admin: ONLY Admin module
+            navButtons.getChildren().add(createSectionLabel("Admin"));
             if (adminBtn != null) {
                 navButtons.getChildren().add(adminBtn);
             }
@@ -75,12 +91,16 @@ public class MainDashboardController {
 
         } else if (user.isManager()) {
             // Manager: Everything EXCEPT Admin
+            navButtons.getChildren().add(createSectionLabel("OPERATIONS"));
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
+            if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);
+
+            navButtons.getChildren().add(createSectionLabel("ACCOUNT HOLDERS"));
             if (customerBtn != null) navButtons.getChildren().add(customerBtn);
-            if (financeBtn != null) navButtons.getChildren().add(financeBtn);
-            if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);  // ✅ Manager CAN access Suppliers
             if (discountBtn != null) navButtons.getChildren().add(discountBtn);
+
+            navButtons.getChildren().add(createSectionLabel("MANAGEMENT"));
             if (templatesBtn != null) navButtons.getChildren().add(templatesBtn);
             if (reportBtn != null) navButtons.getChildren().add(reportBtn);
 
@@ -90,11 +110,13 @@ public class MainDashboardController {
 
         } else if (user.isPharmacist()) {
             // Pharmacist: Everything EXCEPT Admin AND Reports AND Templates
+            navButtons.getChildren().add(createSectionLabel("OPERATIONS"));
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
+            if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);
+
+            navButtons.getChildren().add(createSectionLabel("ACCOUNT HOLDERS"));
             if (customerBtn != null) navButtons.getChildren().add(customerBtn);
-            if (financeBtn != null) navButtons.getChildren().add(financeBtn);
-            if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);  // ✅ Pharmacist CAN access Suppliers
             if (discountBtn != null) navButtons.getChildren().add(discountBtn);
             // NO Templates button for Pharmacist
             // NO Reports button for Pharmacist
@@ -123,7 +145,7 @@ public class MainDashboardController {
         }
     }
 
- //nav below
+    //nav below
 
     @FXML
     private void showPOS() {
@@ -161,18 +183,7 @@ public class MainDashboardController {
     private void showDiscountSettings() {
         // Security check: Manager and Pharmacist can access Discount Settings
         if (currentUser != null && (currentUser.isManager() || currentUser.isPharmacist())) {
-            try {
-                DiscountSettingsView discountView = new DiscountSettingsView();
-                contentArea.getChildren().setAll(discountView);
-                if (titleLabel != null) {
-                    titleLabel.setText("Discount Settings");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                contentArea.getChildren().setAll(
-                        new Label("Error loading Discount Settings: " + e.getMessage())
-                );
-            }
+            loadView("/com/pharmacy/iposca/discount_settings.fxml", "Discount Settings");
         } else {
             contentArea.getChildren().setAll(
                     new Label("Access Denied: Discount Settings is for Manager and Pharmacist roles only.")

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
@@ -7,8 +8,8 @@
 <BorderPane prefHeight="700.0" prefWidth="1000.0"
             xmlns="http://javafx.com/javafx/17.0.12"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.pharmacy.iposca.controller.MainDashboardController">
-
+            fx:controller="com.pharmacy.iposca.controller.MainDashboardController"
+            stylesheets="@styles/sidebar.css">
     <left>
         <VBox fx:id="sidebar" spacing="10"
               style="-fx-background-color: #2c3e50; -fx-padding: 15;">
@@ -22,51 +23,184 @@
             <Separator style="-fx-background-color: #ecf0f1;"/>
 
             <!-- Navigation Buttons (populated by controller based on role) -->
-            <VBox fx:id="navButtons" spacing="10" VBox.vgrow="ALWAYS">
-                <Button fx:id="posBtn" maxWidth="Infinity" onAction="#showPOS" text="POS / Sales"
-                        style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
-                <Button fx:id="inventoryBtn" maxWidth="Infinity" onAction="#showInventory" text="Inventory"
-                        style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
-                <Button fx:id="customerBtn" maxWidth="Infinity" onAction="#showCustomers" text="Customer Management"
-                        style="-fx-background-color: #e67e22; -fx-text-fill: white;"/>
+            <VBox fx:id="navButtons" spacing="8" VBox.vgrow="ALWAYS">
 
-                <Button fx:id="supplierBtn" maxWidth="Infinity" onAction="#showSuppliers" text="Suppliers"
-                        style="-fx-background-color: #28dfea; -fx-text-fill: white;"/>
-                <!-- Discount Settings Button (Manager & Pharmacist only) -->
-                <Button fx:id="discountBtn" maxWidth="Infinity"
-                        onAction="#showDiscountSettings"
+                <Button fx:id="posBtn"
+                        text="POS / Sales"
+                        maxWidth="Infinity"
+                        onAction="#showPOS">
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="🛒" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        </HBox>
+
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-pos"/>
+                    </styleClass>
+                </Button>
+
+                <Button fx:id="inventoryBtn"
+                        text="Inventory"
+                        maxWidth="Infinity"
+                        onAction="#showInventory">
+
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="📦" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-inventory"/>
+                    </styleClass>
+                </Button>
+
+                <Button fx:id="supplierBtn"
+                        text="Suppliers"
+                        maxWidth="Infinity"
+                        onAction="#showSuppliers">
+
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="🚚" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-supplier"/>
+                    </styleClass>
+                </Button>
+
+                <Button fx:id="customerBtn"
+                        text="Customer Management"
+                        maxWidth="Infinity"
+                        onAction="#showCustomers">
+
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="👤" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-customer"/>
+                    </styleClass>
+                </Button>
+
+
+
+                <Button fx:id="discountBtn"
                         text="Discount Settings"
-                        style="-fx-background-color: #9b59b6; -fx-text-fill: white;"/>
-                <!-- Templates Button (Manager only) -->
-                <Button fx:id="templatesBtn" maxWidth="Infinity"
-                        onAction="#showTemplates"
+                        maxWidth="Infinity"
+                        onAction="#showDiscountSettings">
+
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="💸" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-discount"/>
+                    </styleClass>
+                </Button>
+
+                <Button fx:id="templatesBtn"
                         text="Templates"
-                        style="-fx-background-color: #e84393; -fx-text-fill: white;"/>
-                <Button fx:id="adminBtn" maxWidth="Infinity" onAction="#showAdmin" text="Admin"
-                        style="-fx-background-color: #e74c3c; -fx-text-fill: white;"/>
-                <Button fx:id="reportBtn" maxWidth="Infinity" onAction="#showReports" text="Reports"
-                        style="-fx-background-color: #1abc9c; -fx-text-fill: white;"/>
+                        maxWidth="Infinity"
+                        onAction="#showTemplates">
+
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="📄" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-templates"/>
+                    </styleClass>
+                </Button>
+
+                <Button fx:id="adminBtn"
+                        text="Admin"
+                        maxWidth="Infinity"
+                        onAction="#showAdmin">
+
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="⚙" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-admin"/>
+                    </styleClass>
+                </Button>
+
+                <Button fx:id="reportBtn"
+                        text="Reports"
+                        maxWidth="Infinity"
+                        onAction="#showReports">
+
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="📊" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        </HBox>
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-reports"/>
+                    </styleClass>
+                </Button>
+
             </VBox>
 
             <!-- Bottom Separator -->
-            <Separator style="-fx-background-color: #ecf0f1; -fx-padding: 2 0;"/>
+            <Separator style="-fx-background-color: #ecf0f1; -fx-opacity: 0.6; -fx-padding: 0;"/>
 
             <!-- Logout Button at Bottom -->
             <Button fx:id="logoutBtn"
                     maxWidth="Infinity"
                     onAction="#handleLogout"
-                    style="-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4;"
-                    text="Logout"/>
-
+                    style="-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4;">
+                <graphic>
+                    <HBox spacing="8" alignment="CENTER">
+                        <Label text="⏻" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        <Label text="Logout" style="-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold"/>
+                    </HBox>
+                </graphic>
+            </Button>
         </VBox>
     </left>
 
     <center>
-        <StackPane fx:id="contentArea" style="-fx-background-color: #ecf0f1;">
-            <Label text="Welcome to the Pharmacy Management System"
-                   textFill="#7f8c8d"
-                   style="-fx-font-size: 16px;"/>
-        </StackPane>
+        <ScrollPane fitToWidth="true"
+                    fitToHeight="false"
+                    pannable="true"
+                    hbarPolicy="NEVER"
+                    vbarPolicy="AS_NEEDED"
+                    style="-fx-background: #ecf0f1; -fx-background-color: #ecf0f1;">
+            <content>
+                <StackPane fx:id="contentArea"
+                           alignment="CENTER"
+                           minHeight="600"
+                           style="-fx-background-color: #ecf0f1;">
+                    <Label text="Welcome to the Pharmacy Management System"
+                           textFill="#7f8c8d"
+                           style="-fx-font-size: 18px; -fx-font-weight: 500;"/>
+                </StackPane>
+            </content>
+        </ScrollPane>
     </center>
 
     <top>

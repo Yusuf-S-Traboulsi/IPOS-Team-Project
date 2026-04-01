@@ -2,45 +2,29 @@ package com.pharmacy.iposca.ui;
 
 import com.pharmacy.iposca.controller.CustomerController;
 import com.pharmacy.iposca.model.Customer;
-import javafx.geometry.Insets;
-import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
 import javafx.fxml.FXML;
+import javafx.scene.control.*;
 
-/**
- * Discount Settings View - Manage Fixed and Flexible Discount Plans
- * Access: Manager and Pharmacist roles only
- */
-public class DiscountSettingsView extends VBox {
+public class DiscountSettingsView {
 
     @FXML private ComboBox<Customer> customerCombo;
     @FXML private ComboBox<String> planTypeCombo;
     @FXML private TextField discountRateField;
     @FXML private Label infoLabel;
 
-    private CustomerController customerController = CustomerController.getInstance();
+    @FXML private Label summaryPlanLabel;
+    @FXML private Label summaryCustomerLabel;
+    @FXML private Label summaryRateLabel;
+    @FXML private Label summaryMonthlyLabel;
+    @FXML private Label summaryEffectiveLabel;
 
-    public DiscountSettingsView() {
-        setSpacing(15);
-        setPadding(new Insets(20));
+    private final CustomerController customerController = CustomerController.getInstance();
 
-        // Title
-        Label titleLabel = new Label("Discount Plan Management");
-        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+    @FXML
+    public void initialize() {
+        customerCombo.getItems().setAll(customerController.getCustomerData());
 
-        Separator separator1 = new Separator();
-
-        // Customer Selection
-        Label customerLabel = new Label("Select Customer:");
-        customerLabel.setStyle("-fx-font-weight: bold;");
-        customerCombo = new ComboBox<>();
-        customerCombo.getItems().addAll(customerController.getCustomerData());
-        customerCombo.setPromptText("Choose account holder...");
-        customerCombo.setMaxWidth(400);
-
-        // FIX: Display customer names properly instead of object references
-        customerCombo.setCellFactory(lv -> new ListCell<Customer>() {
+        customerCombo.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(Customer customer, boolean empty) {
                 super.updateItem(customer, empty);
@@ -53,7 +37,7 @@ public class DiscountSettingsView extends VBox {
             }
         });
 
-        customerCombo.setButtonCell(new ListCell<Customer>() {
+        customerCombo.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(Customer customer, boolean empty) {
                 super.updateItem(customer, empty);
@@ -66,95 +50,63 @@ public class DiscountSettingsView extends VBox {
             }
         });
 
-        Label planLabel = new Label("Discount Plan Type:");
-        planLabel.setStyle("-fx-font-weight: bold;");
-        planTypeCombo = new ComboBox<>();
         planTypeCombo.getItems().addAll("NONE", "FIXED", "FLEXIBLE");
         planTypeCombo.setValue("NONE");
-        planTypeCombo.setMaxWidth(400);
 
-        // Discount Rate (for FIXED plan)
-        Label rateLabel = new Label("Discount Rate (%):");
-        rateLabel.setStyle("-fx-font-weight: bold;");
-        discountRateField = new TextField("0");
-        discountRateField.setPromptText("Enter percentage (e.g., 10 for 10%)");
-        discountRateField.setMaxWidth(400);
-
-        // Buttons
-        Button applyButton = new Button("Apply Discount Plan");
-        applyButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;");
-        applyButton.setPadding(new Insets(10, 20, 10, 20));
-        applyButton.setOnAction(e -> handleApplyDiscount());
-
-        Button resetButton = new Button("Reset Monthly Totals (New Month)");
-        resetButton.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold;");
-        resetButton.setPadding(new Insets(10, 20, 10, 20));
-        resetButton.setOnAction(e -> handleResetMonthlyTotals());
-
-        // Info Label
-        infoLabel = new Label();
-        infoLabel.setWrapText(true);
-        infoLabel.setStyle("-fx-text-fill: green; -fx-font-size: 13px;");
-
-        // Help Text
-        Label helpText = new Label(
-                "FIXED Plan: Same discount rate for all purchases\n" +
-                        "FLEXIBLE Plan: Discount varies by monthly spend (2%-15%)"
-        );
-        helpText.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
-        helpText.setWrapText(true);
-
-        // Layout
-        getChildren().addAll(
-                titleLabel,
-                separator1,
-                customerLabel,
-                customerCombo,
-                planLabel,
-                planTypeCombo,
-                rateLabel,
-                discountRateField,
-                applyButton,
-                resetButton,
-                helpText,
-                infoLabel
-        );
-
-        // Update info when customer selected
         customerCombo.setOnAction(e -> updateCustomerInfo());
+
+        planTypeCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            boolean disableRate = newVal == null || newVal.equalsIgnoreCase("NONE");
+            discountRateField.setDisable(disableRate);
+
+            if (disableRate) {
+                discountRateField.setText("0");
+            }
+        });
+
+        infoLabel.setText("");
     }
 
-    /**
-     * Update info display when customer is selected
-     */
     private void updateCustomerInfo() {
         Customer selected = customerCombo.getValue();
         if (selected != null) {
             String info = String.format(
-                    "Current Plan: %s\n" +
-                            "Discount Rate: %.1f%%\n" +
-                            "Monthly Purchases: £%.2f\n" +
-                            "Effective Discount: %.1f%%",
+                    "Current Plan: %s | Discount Rate: %.1f%% | Monthly Purchases: £%.2f | Effective Discount: %.1f%%",
                     selected.getDiscountPlanType(),
                     selected.getDiscountRate() * 100,
                     selected.getMonthlyPurchaseTotal(),
                     selected.calculateEffectiveDiscountRate() * 100
             );
             infoLabel.setText(info);
+            infoLabel.setStyle("-fx-text-fill: #2c3e50; -fx-font-size: 13px; -fx-font-weight: bold;");
             discountRateField.setText(String.valueOf(selected.getDiscountRate() * 100));
             planTypeCombo.setValue(selected.getDiscountPlanType());
+            summaryPlanLabel.setText(selected.getDiscountPlanType());
+            summaryRateLabel.setText(String.format("%.1f%%", selected.getDiscountRate() * 100));
+            summaryMonthlyLabel.setText(String.format("£%.2f", selected.getMonthlyPurchaseTotal()));
+            summaryEffectiveLabel.setText(String.format("%.1f%%", selected.calculateEffectiveDiscountRate() * 100));
+            summaryCustomerLabel.setText(selected.getTitle() + " " + selected.getName() + "  ID: " + selected.getId());
+        } else {
+            infoLabel.setText("Select a customer to view and manage discount settings.");
+            infoLabel.setStyle("-fx-text-fill: #2c3e50; -fx-font-size: 13px; -fx-font-weight: bold;");
+
+            discountRateField.setText("0");
+            planTypeCombo.setValue("NONE");
+            discountRateField.setDisable(true);
+
+            summaryCustomerLabel.setText("No customer selected");
+            summaryPlanLabel.setText("None selected");
+            summaryRateLabel.setText("0.0%");
+            summaryMonthlyLabel.setText("£0.00");
+            summaryEffectiveLabel.setText("0.0%");
         }
     }
 
-    /**
-     * Apply discount plan to selected customer
-     */
     @FXML
     private void handleApplyDiscount() {
         Customer selected = customerCombo.getValue();
         if (selected == null) {
-            infoLabel.setText("Please select a customer");
-            infoLabel.setStyle("-fx-text-fill: red;");
+            showError("Please select a customer.");
             return;
         }
 
@@ -162,40 +114,49 @@ public class DiscountSettingsView extends VBox {
         double rate = 0.0;
 
         try {
-            rate = Double.parseDouble(discountRateField.getText()) / 100.0;
-        } catch (NumberFormatException e) {
-            infoLabel.setText("Invalid discount rate format");
-            infoLabel.setStyle("-fx-text-fill: red;");
+            if (!"NONE".equalsIgnoreCase(planType)) {
+                rate = Double.parseDouble(discountRateField.getText()) / 100.0;
+            }
+        } catch(NumberFormatException e){
+            showError("Invalid discount rate format.");
+            return;
+        }
+        if (rate < 0.0 || rate > 1.0) {
+            showError("Discount rate must be between 0% and 100%");
             return;
         }
 
         boolean success = customerController.setDiscountPlan(selected, planType, rate);
 
         if (success) {
-            infoLabel.setText("Discount plan applied successfully!");
-            infoLabel.setStyle("-fx-text-fill: green;");
+            showSuccess("Discount plan applied successfully.");
             updateCustomerInfo();
         } else {
-            infoLabel.setText("Failed to apply discount plan");
-            infoLabel.setStyle("-fx-text-fill: red;");
+            showError("Failed to apply discount plan.");
         }
     }
 
-    /**
-     * Reset all monthly purchase totals (start of new month)
-     */
     @FXML
     private void handleResetMonthlyTotals() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Reset Monthly Totals");
         alert.setHeaderText("Reset all customers' monthly purchase totals?");
-        alert.setContentText("This should be done at the start of each calendar month for flexible discount calculation.");
+        alert.setContentText("This should be done at the start of each calendar month.");
 
-        if (alert.showAndWait().get() == ButtonType.OK) {
+        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             customerController.resetAllMonthlyPurchaseTotals();
-            infoLabel.setText("All monthly totals reset for new month");
-            infoLabel.setStyle("-fx-text-fill: green;");
+            showSuccess("All monthly totals reset for the new month.");
             updateCustomerInfo();
         }
+    }
+
+    private void showSuccess(String message) {
+        infoLabel.setText(message);
+        infoLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-size: 13px; -fx-font-weight: bold;");
+    }
+
+    private void showError(String message) {
+        infoLabel.setText(message);
+        infoLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 13px; -fx-font-weight: bold;");
     }
 }
