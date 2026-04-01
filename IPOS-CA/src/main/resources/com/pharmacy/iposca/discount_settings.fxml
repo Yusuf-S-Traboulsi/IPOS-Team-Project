@@ -2,45 +2,286 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.geometry.Insets?>
 
-<VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;"
-      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.pharmacy.iposca.ui.DiscountSettingsView">
+<AnchorPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.pharmacy.iposca.ui.DiscountSettingsView"
+            style="-fx-background-color: #f4f6f8;">
 
-    <!-- Title -->
-    <Label text="Discount Plan Management"
-           style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+    <HBox spacing="18"
+          AnchorPane.topAnchor="18"
+          AnchorPane.leftAnchor="18"
+          AnchorPane.rightAnchor="18"
+          AnchorPane.bottomAnchor="18"
+          alignment="TOP_LEFT">
 
-    <Separator style="-fx-background-color: #bdc3c7;"/>
+        <!-- LEFT MAIN COLUMN -->
+        <VBox spacing="16"
+              HBox.hgrow="ALWAYS"
+              prefWidth="980">
 
-    <!-- Customer Selection -->
-    <Label text="Select Customer:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-    <ComboBox fx:id="customerCombo" prefWidth="400" promptText="Choose account holder..."/>
+            <!-- PAGE HEADER CARD -->
+            <VBox spacing="6"
+                  style="-fx-background-color: white;
+                         -fx-padding: 24;
+                         -fx-background-radius: 10;
+                         -fx-border-radius: 10;
+                         -fx-border-color: #dfe4ea;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 10, 0.15, 0, 2);">
+                <Label text="Discount Plan Management"
+                       style="-fx-font-size: 24px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #223a5e;"/>
+                <Label text="Configure discount plans for pharmacy account holders"
+                       style="-fx-font-size: 13px;
+                              -fx-text-fill: #7a869a;"/>
+            </VBox>
 
-    <!-- Discount Plan Type -->
-    <Label text="Discount Plan Type:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-    <ComboBox fx:id="planTypeCombo" prefWidth="400"/>
+            <!-- CUSTOMER SELECTION CARD -->
+            <VBox spacing="16"
+                  style="-fx-background-color: white;
+                         -fx-padding: 24;
+                         -fx-background-radius: 10;
+                         -fx-border-radius: 10;
+                         -fx-border-color: #dfe4ea;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0.12, 0, 2);">
 
-    <!-- Discount Rate -->
-    <Label text="Discount Rate (%):" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-    <TextField fx:id="discountRateField" prefWidth="400" promptText="Enter percentage (e.g., 10 for 10%)"/>
+                <Label text="Customer Selection"
+                       style="-fx-font-size: 16px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #2c3e50;"/>
 
-    <!-- Action Buttons -->
-    <HBox spacing="10" alignment="CENTER_LEFT">
-        <Button text="Apply Discount Plan" onAction="#handleApplyDiscount"
-                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"/>
-        <Button text="Reset Monthly Totals (New Month)" onAction="#handleResetMonthlyTotals"
-                style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"/>
+                <Separator/>
+
+                <GridPane hgap="16" vgap="16">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                        <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <!-- Select customer -->
+                    <VBox spacing="6" GridPane.rowIndex="0" GridPane.columnIndex="0">
+                        <Label text="Select Customer"
+                               style="-fx-font-size: 13px;
+                                      -fx-font-weight: bold;
+                                      -fx-text-fill: #4b5563;"/>
+                        <ComboBox fx:id="customerCombo"
+                                  maxWidth="Infinity"
+                                  promptText="Choose account holder..."
+                                  style="-fx-pref-height: 40;
+                                         -fx-background-radius: 7;
+                                         -fx-border-radius: 7;
+                                         -fx-border-color: #cfd8e3;"/>
+                    </VBox>
+
+                    <!-- Plan type -->
+                    <VBox spacing="6" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <Label text="Discount Plan Type"
+                               style="-fx-font-size: 13px;
+                                      -fx-font-weight: bold;
+                                      -fx-text-fill: #4b5563;"/>
+                        <ComboBox fx:id="planTypeCombo"
+                                  maxWidth="Infinity"
+                                  style="-fx-pref-height: 40;
+                                         -fx-background-radius: 7;
+                                         -fx-border-radius: 7;
+                                         -fx-border-color: #cfd8e3;"/>
+                    </VBox>
+
+                    <!-- Discount rate -->
+                    <VBox spacing="6" GridPane.rowIndex="1" GridPane.columnIndex="0">
+                        <Label text="Discount Rate (%)"
+                               style="-fx-font-size: 13px;
+                                      -fx-font-weight: bold;
+                                      -fx-text-fill: #4b5563;"/>
+                        <TextField fx:id="discountRateField"
+                                   maxWidth="Infinity"
+                                   promptText="Enter percentage (e.g. 10%)"
+                                   style="-fx-pref-height: 40;
+                                          -fx-background-radius: 7;
+                                          -fx-border-radius: 7;
+                                          -fx-border-color: #cfd8e3;"/>
+                    </VBox>
+                </GridPane>
+            </VBox>
+
+            <!-- DISCOUNT CONFIGURATION CARD -->
+            <VBox spacing="14"
+                  style="-fx-background-color: white;
+                         -fx-padding: 24;
+                         -fx-background-radius: 10;
+                         -fx-border-radius: 10;
+                         -fx-border-color: #dfe4ea;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0.12, 0, 2);">
+
+                <Label text="Discount Configuration"
+                       style="-fx-font-size: 16px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #2c3e50;"/>
+
+                <Separator/>
+
+                <VBox spacing="8"
+                      style="-fx-background-color: #fff8e8;
+                             -fx-padding: 16;
+                             -fx-background-radius: 8;
+                             -fx-border-radius: 8;
+                             -fx-border-color: #d6e4ff;">
+                    <Label text="Plan Rules:"
+                           style="-fx-font-size: 14px;
+                                  -fx-font-weight: bold;
+                                  -fx-text-fill: #4b5563;"/>
+
+                    <Label text="• FIXED: Same discount rate applied to all purchases"
+                           wrapText="true"
+                           style="-fx-font-size: 13px;
+                                  -fx-text-fill: #5f6b7a;"/>
+
+                    <Label text="• FLEXIBLE: Discount varies by monthly spend (2%–15%)"
+                           wrapText="true"
+                           style="-fx-font-size: 13px;
+                                  -fx-text-fill: #5f6b7a;"/>
+                </VBox>
+            </VBox>
+
+            <!-- ACTIONS CARD -->
+            <VBox spacing="14"
+                  style="-fx-background-color: white;
+                         -fx-padding: 24;
+                         -fx-background-radius: 10;
+                         -fx-border-radius: 10;
+                         -fx-border-color: #dfe4ea;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0.12, 0, 2);">
+
+                <Label text="Actions"
+                       style="-fx-font-size: 16px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #2c3e50;"/>
+
+                <Separator/>
+
+                <HBox spacing="14" alignment="CENTER_LEFT">
+                    <Button text="Apply Discount Plan"
+                            onAction="#handleApplyDiscount"
+                            style="-fx-background-color: #28b38a;
+                                   -fx-text-fill: white;
+                                   -fx-font-size: 14px;
+                                   -fx-font-weight: bold;
+                                   -fx-padding: 12 24;
+                                   -fx-background-radius: 8;"/>
+
+                    <Button text="Reset Monthly Totals"
+                            onAction="#handleResetMonthlyTotals"
+                            style="-fx-background-color: transparent;
+                                   -fx-text-fill: #e67e22;
+                                   -fx-font-size: 14px;
+                                   -fx-font-weight: bold;
+                                   -fx-padding: 12 22;
+                                   -fx-border-color: #f0c8a0;
+                                   -fx-border-radius: 8;
+                                   -fx-background-radius: 8;"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <!-- RIGHT SUMMARY COLUMN -->
+        <VBox spacing="16"
+              prefWidth="330"
+              minWidth="300"
+              maxWidth="350">
+
+            <!-- ACCOUNT SUMMARY CARD -->
+            <VBox spacing="14"
+                  style="-fx-background-color: white;
+                         -fx-padding: 22;
+                         -fx-background-radius: 10;
+                         -fx-border-radius: 10;
+                         -fx-border-color: #dfe4ea;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0.12, 0, 2);">
+
+                <Label text="Account Holder"
+                       style="-fx-font-size: 18px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #223a5e;"/>
+
+                <Label text="Current customer discount overview"
+                       style="-fx-font-size: 12px;
+                              -fx-text-fill: #7a869a;"/>
+
+                <VBox spacing="4">
+                    <Label text="Selected Customer"
+                           style="-fx-font-size: 12px;
+                                  -fx-text-fill: #8b95a5;"/>
+                    <Label fx:id="summaryCustomerLabel"
+                           text="No customer selected"
+                           wrapText="true"
+                           style="-fx-font-size: 15px;
+                                  -fx-font-weight: bold;
+                                  -fx-text-fill: #2c3e50;"/>
+                </VBox>
+
+                <Separator/>
+
+                <VBox spacing="10"
+                      style="-fx-background-color: #f8fafc;
+                             -fx-padding: 14;
+                             -fx-background-radius: 8;
+                             -fx-border-radius: 8;
+                             -fx-border-color: #e5eaf0;">
+
+                    <Label text="Current Plan"
+                           style="-fx-font-size: 12px; -fx-text-fill: #8b95a5;"/>
+                    <Label fx:id="summaryPlanLabel"
+                           text="None selected"
+                           style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+                    <Separator/>
+
+                    <Label text="Discount Rate"
+                           style="-fx-font-size: 12px; -fx-text-fill: #8b95a5;"/>
+                    <Label fx:id="summaryRateLabel"
+                           text="0.0%"
+                           style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #1f9d6a;"/>
+
+                    <Separator/>
+
+                    <Label text="Monthly Purchases"
+                           style="-fx-font-size: 12px; -fx-text-fill: #8b95a5;"/>
+                    <Label fx:id="summaryMonthlyLabel"
+                           text="£0.00"
+                           style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+                    <Separator/>
+
+                    <Label text="Effective Discount"
+                           style="-fx-font-size: 12px; -fx-text-fill: #8b95a5;"/>
+                    <Label fx:id="summaryEffectiveLabel"
+                           text="0.0%"
+                           style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #223a5e;"/>
+                </VBox>
+            </VBox>
+
+            <!-- STATUS CARD -->
+            <VBox spacing="8"
+                  style="-fx-background-color: white;
+                         -fx-padding: 20;
+                         -fx-background-radius: 10;
+                         -fx-border-radius: 10;
+                         -fx-border-color: #dfe4ea;
+                         -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 8, 0.12, 0, 2);">
+
+                <Label text="Status"
+                       style="-fx-font-size: 15px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #2c3e50;"/>
+
+                <Label fx:id="infoLabel"
+                       text="Select a customer to view and manage discount settings."
+                       wrapText="true"
+                       style="-fx-font-size: 13px;
+                              -fx-font-weight: bold;
+                              -fx-text-fill: #2c3e50;"/>
+            </VBox>
+        </VBox>
     </HBox>
-
-    <!-- Help Text -->
-    <Label text="FIXED Plan: Same discount rate for all purchases&#10;FLEXIBLE Plan: Discount varies by monthly spend (2%-15%)"
-           wrapText="true"
-           style="-fx-text-fill: #7f8c8d; -fx-font-size: 12px; -fx-background-color: #fef9e7; -fx-padding: 10; -fx-background-radius: 5;"/>
-
-    <!-- Info Label -->
-    <Label fx:id="infoLabel" wrapText="true"
-           style="-fx-text-fill: #27ae60; -fx-font-size: 13px; -fx-font-weight: bold;"/>
-
-</VBox>
+</AnchorPane>

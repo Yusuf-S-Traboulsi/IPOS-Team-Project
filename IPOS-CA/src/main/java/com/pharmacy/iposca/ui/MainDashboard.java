@@ -69,15 +69,15 @@ public class MainDashboard {
      * Load Discount Settings screen
      */
     @FXML
-    private void showDiscountSettings() {
-        try {
+    private void showDiscountSettings() {loadScreen("com/pharmacy/iposca/discount_settings.fxml"); }
+       /* try {
             DiscountSettingsView discountView = new DiscountSettingsView();
             contentArea.getChildren().setAll(discountView);
         } catch (Exception e) {
             System.err.println("Could not load Discount Settings");
             e.printStackTrace();
         }
-    }
+    } */
 
     /**
      * Load Merchant/Template Settings screen
