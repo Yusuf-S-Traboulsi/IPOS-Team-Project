@@ -7,23 +7,31 @@ import java.sql.SQLException;
 /**
  * Database Connector for IPOS-CA and IPOS-SA
  *
- * IPOS-CA: Pharmacy system (ipos_ca database)
- * IPOS-SA: Supplier system (ipos_sa database) - SEPARATE!
+ * IPOS-CA: Pharmacy system (ipos_ca database) - Direct access
+ * IPOS-SA: Supplier system (ipos_sa database) - ONLY via SupplierRestAPI
  */
 public class DatabaseConnector {
 
     // IPOS-CA Database (Pharmacy System)
     private static final String CA_URL = "jdbc:mysql://127.0.0.1:3306/ipos_ca?useSSL=false&allowPublicKeyRetrieval=true";
-    private static final String CA_USER = "root";
-    private static final String CA_PASSWORD = "Swim1234";
+
+    // ✅ Use System.getProperty() with fallback defaults
+    private static final String CA_USER =
+            System.getProperty("IPOS_CA_DB_USER", "root");
+    private static final String CA_PASSWORD =
+            System.getProperty("IPOS_CA_DB_PASSWORD", "Swim1234");
 
     // IPOS-SA Database (Supplier System) - SEPARATE DATABASE!
     private static final String SA_URL = "jdbc:mysql://127.0.0.1:3306/ipos_sa?useSSL=false&allowPublicKeyRetrieval=true";
-    private static final String SA_USER = "root";
-    private static final String SA_PASSWORD = "Swim1234";
+
+    // ✅ Use System.getProperty() with fallback defaults
+    private static final String SA_USER =
+            System.getProperty("IPOS_SA_DB_USER", "root");
+    private static final String SA_PASSWORD =
+            System.getProperty("IPOS_SA_DB_PASSWORD", "Swim1234");
 
     static {
-        testConnection();
+        testCADatabase();
     }
 
     /**
@@ -52,19 +60,16 @@ public class DatabaseConnector {
     }
 
     /**
-     * Test connection on startup
+     * Test connection to IPOS-CA database on startup.
+     * This avoids touching the IPOS-SA database unless explicitly requested.
      */
-    public static void testConnection() {
+    private static void testCADatabase() {
         try {
             Connection conn = getConnection();
-            System.out.println("✅ Connected to IPOS-CA database at " + CA_URL);
+            System.out.println("Connected to IPOS-CA database at " + CA_URL);
             conn.close();
-
-            Connection saConn = getSAConnection();
-            System.out.println("✅ Connected to IPOS-SA database at " + SA_URL);
-            saConn.close();
         } catch (SQLException e) {
-            System.err.println("❌ FAILED to connect to database!");
+            System.err.println("FAILED to connect to IPOS-CA database!");
             System.err.println("   Error: " + e.getMessage());
         }
     }

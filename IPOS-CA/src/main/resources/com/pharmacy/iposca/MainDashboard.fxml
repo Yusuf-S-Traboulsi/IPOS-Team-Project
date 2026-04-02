@@ -31,9 +31,8 @@
                         onAction="#showPOS">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="🛒" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                            <Label text="🛒" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
-
                     </graphic>
                     <styleClass>
                         <String fx:value="button"/>
@@ -46,10 +45,9 @@
                         text="Inventory"
                         maxWidth="Infinity"
                         onAction="#showInventory">
-
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="📦" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                            <Label text="📦" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -63,10 +61,9 @@
                         text="Suppliers"
                         maxWidth="Infinity"
                         onAction="#showSuppliers">
-
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="🚚" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                            <Label text="🚚" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -80,10 +77,9 @@
                         text="Customer Management"
                         maxWidth="Infinity"
                         onAction="#showCustomers">
-
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="👤" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                            <Label text="👤" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -93,16 +89,13 @@
                     </styleClass>
                 </Button>
 
-
-
                 <Button fx:id="discountBtn"
                         text="Discount Settings"
                         maxWidth="Infinity"
                         onAction="#showDiscountSettings">
-
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="💸" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                            <Label text="💸" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -116,10 +109,9 @@
                         text="Templates"
                         maxWidth="Infinity"
                         onAction="#showTemplates">
-
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="📄" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                            <Label text="📄" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -133,10 +125,9 @@
                         text="Admin"
                         maxWidth="Infinity"
                         onAction="#showAdmin">
-
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="⚙" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                            <Label text="⚙" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -150,10 +141,9 @@
                         text="Reports"
                         maxWidth="Infinity"
                         onAction="#showReports">
-
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="📊" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                            <Label text="📊" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -175,7 +165,7 @@
                     style="-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4;">
                 <graphic>
                     <HBox spacing="8" alignment="CENTER">
-                        <Label text="⏻" style="-fx-text-fill: white; -fx-font-size: 14px;"/>
+                        <Label text="⏻" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         <Label text="Logout" style="-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold"/>
                     </HBox>
                 </graphic>
