@@ -14,18 +14,15 @@ import java.time.LocalDate;
  */
 public class SupplierRestAPI {
 
-    // ✅ FIXED: Use System.getProperty() with fallback
     private static final String API_KEY =
             System.getProperty("IPOS_SA_API_KEY", "ipos-sa-secret-key-2026");
 
     private static final Gson gson = new Gson();
 
     public static void start(int port) {
-        // Use spark.Service for independent server instance
         Service saService = spark.Service.ignite();
         saService.port(port);
 
-        // Handle CORS preflight (OPTIONS requests)
         saService.options("/*", (req, res) -> {
             res.header("Access-Control-Allow-Origin", "*");
             res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -33,7 +30,6 @@ public class SupplierRestAPI {
             return "";
         });
 
-        // API Key Authentication (skip for health check and OPTIONS)
         saService.before((request, response) -> {
             if (request.pathInfo().equals("/api/health")) {
                 return;

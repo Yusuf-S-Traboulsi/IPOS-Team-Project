@@ -148,9 +148,7 @@ public class SupplierController implements ISupplierAPI {
         return authenticateWithIposSa(username, password);
     }
 
-    // ============================================================
-    // API COMMUNICATION METHODS (HTTP Calls - NO JDBC)
-    // ============================================================
+    // API COMMUNICATION METHODS
 
     private void loadCatalogue() {
         String response = sendGetRequest("/catalogue");
@@ -326,9 +324,7 @@ public class SupplierController implements ISupplierAPI {
         return false;
     }
 
-    // ============================================================
     // HTTP CLIENT METHODS
-    // ============================================================
 
     private String sendGetRequest(String endpoint) {
         try {
@@ -414,9 +410,7 @@ public class SupplierController implements ISupplierAPI {
         System.out.println("   (In production, this would update IPOS-CA products table via API)");
     }
 
-    // ============================================================
-    // REPORT GENERATION METHODS (Keep existing - work with local data)
-    // ============================================================
+    // REPORT GENERATION METHODS
 
     public File generateOrderForm(String orderId) {
         File file = new File("OrderForm_" + orderId + "_" +
