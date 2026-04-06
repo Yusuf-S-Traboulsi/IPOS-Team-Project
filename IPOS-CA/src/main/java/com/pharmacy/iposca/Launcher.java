@@ -2,6 +2,7 @@ package com.pharmacy.iposca;
 
 import com.pharmacy.iposca.api.InventoryRestAPI;
 import com.pharmacy.iposca.api.SupplierRestAPI;
+import io.github.cdimascio.dotenv.Dotenv;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -10,9 +11,11 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import spark.Spark;
 
+import java.io.IOException;
+
 /**
  * JavaFX Application Launcher for IPOS-CA Pharmacy Management System
- * Starts BOTH REST APIs in background and loads JavaFX UI
+ * Starts REST APIs in background and loads JavaFX UI
  */
 public class Launcher extends Application {
 
@@ -21,36 +24,60 @@ public class Launcher extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        // ✅ Start IPOS-CA REST API (Port 4567) - Pharmacy System
-        new Thread(() -> {
+        // ✅ Load .env file and export as system properties
+        Dotenv dotenv = Dotenv.configure()
+                .filename("IPOS.env")           // Your custom filename
+                .directory(".")                  // Look in project root
+                .systemProperties()              // Export to System.getProperty()
+                .ignoreIfMissing()               // Don't crash if file missing
+                .load();
+
+        // Debug: Print loaded values (remove in production)
+        System.out.println("DEBUG: IPOS_SA_API_KEY loaded = [" +
+                System.getProperty("IPOS_SA_API_KEY", "NOT SET") + "]");
+
+        // Start APIs BEFORE loading UI (on background threads)
+        Thread apiThread = new Thread(() -> {
             InventoryRestAPI.start(4567);
-        }).start();
-
-        // ✅ Start IPOS-SA REST API (Port 4568) - Supplier System
-        new Thread(() -> {
             SupplierRestAPI.start(4568);
-        }).start();
-
-        // Wait for APIs to initialize
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        // Load JavaFX UI
-        Parent root = FXMLLoader.load(getClass().getResource("/com/pharmacy/iposca/LoginView.fxml"));
-        primaryStage.setTitle("IPOS-CA - Pharmacy Management System");
-        primaryStage.setScene(new Scene(root, WIDTH, HEIGHT));
-
-        // Safety: Shutdown Spark when the window closes
-        primaryStage.setOnCloseRequest(t -> {
-            Spark.stop();
-            Platform.exit();
-            System.exit(0);
         });
+        apiThread.setDaemon(true);
+        apiThread.start();
 
-        primaryStage.show();
+        // Show loading screen while APIs initialize
+        Stage loadingStage = new Stage();
+        javafx.scene.control.Label loadingLabel = new javafx.scene.control.Label("Starting IPOS-CA...");
+        loadingLabel.setStyle("-fx-font-size: 16px; -fx-padding: 20px;");
+        loadingStage.setScene(new Scene(new javafx.scene.layout.VBox(loadingLabel), 300, 100));
+        loadingStage.show();
+
+        // Wait for APIs then load main UI
+        new Thread(() -> {
+            try {
+                Thread.sleep(2000); // Wait for APIs
+                Platform.runLater(() -> {
+                    loadingStage.close();
+
+                    Parent root = null;
+                    try {
+                        root = FXMLLoader.load(getClass().getResource("/com/pharmacy/iposca/LoginView.fxml"));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    primaryStage.setTitle("IPOS-CA - Pharmacy Management System");
+                    primaryStage.setScene(new Scene(root, WIDTH, HEIGHT));
+
+                    primaryStage.setOnCloseRequest(t -> {
+                        Platform.exit();
+                        System.exit(0);
+                    });
+
+                    primaryStage.show();
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     public static void main(String[] args) {

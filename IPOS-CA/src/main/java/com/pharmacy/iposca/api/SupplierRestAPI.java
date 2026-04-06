@@ -14,88 +14,100 @@ import java.time.LocalDate;
  */
 public class SupplierRestAPI {
 
-    private static final String API_KEY = "ipos-sa-secret-key-2026";
+    private static final String API_KEY =
+            System.getProperty("IPOS_SA_API_KEY", "ipos-sa-secret-key-2026");
+
     private static final Gson gson = new Gson();
 
     public static void start(int port) {
-        // ⚠️ MUST BE FIRST - Set port BEFORE any routes
-        Spark.port(port);
+        Service saService = spark.Service.ignite();
+        saService.port(port);
 
-        // API Key Authentication
-        Spark.before((request, response) -> {
-            if (!request.pathInfo().equals("/api/health")) {
-                String apiKey = request.headers("X-API-Key");
-                if (apiKey == null || !apiKey.equals(API_KEY)) {
-                    Spark.halt(401, "{\"error\": \"Unauthorized - Invalid API Key\"}");
-                }
+        saService.options("/*", (req, res) -> {
+            res.header("Access-Control-Allow-Origin", "*");
+            res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            res.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
+            return "";
+        });
+
+        saService.before((request, response) -> {
+            if (request.pathInfo().equals("/api/health")) {
+                return;
+            }
+            if (request.requestMethod().equalsIgnoreCase("OPTIONS")) {
+                return;
+            }
+            String apiKey = request.headers("X-API-Key");
+            if (apiKey == null || !apiKey.equals(API_KEY)) {
+                response.header("Access-Control-Allow-Origin", "*");
+                Spark.halt(401, "{\"success\": false, \"error\": \"Unauthorized - Invalid API Key\"}");
             }
         });
 
-        // CORS Headers
-        Spark.after((request, response) -> {
+        // CORS Headers on ALL responses (including errors)
+        saService.after((request, response) -> {
             response.header("Access-Control-Allow-Origin", "*");
-            response.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+            response.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
             response.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
         });
 
         // Health Check
-        Spark.get("/api/health", (req, res) -> {
+        saService.get("/api/health", (req, res) -> {
             res.type("application/json");
             return "{\"status\": \"ok\", \"system\": \"IPOS-SA\", \"timestamp\": \"" + LocalDate.now() + "\"}";
         });
 
         // Get Catalogue
-        Spark.get("/api/catalogue", (req, res) -> {
+        saService.get("/api/catalogue", (req, res) -> {
             res.type("application/json");
             return getCatalogue();
         });
 
         // Get Orders
-        Spark.get("/api/orders", (req, res) -> {
+        saService.get("/api/orders", (req, res) -> {
             res.type("application/json");
             return getOrders();
         });
 
         // Place Order
-        Spark.post("/api/orders", (req, res) -> {
+        saService.post("/api/orders", (req, res) -> {
             res.type("application/json");
             return placeOrder(req.body());
         });
 
         // Mark Delivered
-        Spark.put("/api/orders/:id/delivered", (req, res) -> {
+        saService.put("/api/orders/:id/delivered", (req, res) -> {
             res.type("application/json");
             return markOrderAsDelivered(req.params(":id"));
         });
 
         // Mark Paid
-        Spark.put("/api/orders/:id/paid", (req, res) -> {
+        saService.put("/api/orders/:id/paid", (req, res) -> {
             res.type("application/json");
             return markOrderAsPaid(req.params(":id"));
         });
 
         // Get Balance
-        Spark.get("/api/balance", (req, res) -> {
+        saService.get("/api/balance", (req, res) -> {
             res.type("application/json");
             return getOutstandingBalance();
         });
 
         // Get Invoices
-        Spark.get("/api/invoices", (req, res) -> {
+        saService.get("/api/invoices", (req, res) -> {
             res.type("application/json");
             return getInvoices();
         });
 
         // Authenticate
-        Spark.post("/api/auth", (req, res) -> {
+        saService.post("/api/auth", (req, res) -> {
             res.type("application/json");
             return authenticate(req.body());
         });
 
-        System.out.println("   IPOS-SA REST API Started on port " + port);
+        System.out.println("IPOS-SA REST API Started on port " + port);
         System.out.println("   Base URL: http://localhost:" + port + "/api");
-        System.out.println("   API Key: " + API_KEY);
-        System.out.println("   Database: ipos_sa (SEPARATE!)");
+        System.out.println("   Auth: Enabled (API Key required)");
     }
 
     private static String getCatalogue() {
@@ -191,17 +203,54 @@ public class SupplierRestAPI {
     }
 
     private static String markOrderAsPaid(String orderId) {
-        String sql = "UPDATE supplier_orders SET payment_status = 'Paid', paid_date = ? WHERE order_id = ?";
-        int rows = executeUpdate(sql, Date.valueOf(LocalDate.now()), orderId);
+        Connection conn = null;
+        PreparedStatement orderStmt = null;
+        PreparedStatement invoiceStmt = null;
 
         JsonObject response = new JsonObject();
-        if (rows > 0) {
-            response.addProperty("success", true);
-            response.addProperty("message", "Order marked as paid");
-        } else {
+
+        try {
+            conn = DatabaseConnector.getSAConnection();
+            conn.setAutoCommit(false);
+
+            String orderSql = "UPDATE supplier_orders SET payment_status = 'Paid', paid_date = ? WHERE order_id = ?";
+            orderStmt = conn.prepareStatement(orderSql);
+            orderStmt.setDate(1, Date.valueOf(LocalDate.now()));
+            orderStmt.setString(2, orderId);
+            int orderRows = orderStmt.executeUpdate();
+
+            if (orderRows == 0) {
+                conn.rollback();
+                response.addProperty("success", false);
+                response.addProperty("error", "Order not found");
+            } else {
+                String invoiceSql = "UPDATE supplier_invoices " +
+                        "SET status = 'Paid', " +
+                        "    paid_amount = paid_amount + outstanding_balance, " +
+                        "    outstanding_balance = 0 " +
+                        "WHERE order_id = ?";
+                invoiceStmt = conn.prepareStatement(invoiceSql);
+                invoiceStmt.setString(1, orderId);
+                invoiceStmt.executeUpdate();
+
+                conn.commit();
+                response.addProperty("success", true);
+                response.addProperty("message", "Order marked as paid");
+            }
+        } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ignored) {}
+            }
             response.addProperty("success", false);
-            response.addProperty("error", "Order not found");
+            response.addProperty("error", "Failed to mark order as paid");
+        } finally {
+            try { if (invoiceStmt != null) invoiceStmt.close(); } catch (SQLException ignored) {}
+            try { if (orderStmt != null) orderStmt.close(); } catch (SQLException ignored) {}
+            try { if (conn != null) { conn.setAutoCommit(true); conn.close(); } } catch (SQLException ignored) {}
         }
+
         return gson.toJson(response);
     }
 
