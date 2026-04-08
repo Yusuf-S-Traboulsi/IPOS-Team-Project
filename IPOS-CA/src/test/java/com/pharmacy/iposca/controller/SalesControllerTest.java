@@ -59,7 +59,7 @@ public class SalesControllerTest {
     public void testProcessSaleWithSuspendedAccount() {
         System.out.println("Products count: " + inventoryController.getProducts().size());
 
-        Customer customer = new Customer(101, "Mr.", "Test User", "123 St", "London", "SW1", 1000.0, 0.0);
+        Customer customer = new Customer(101, "Mr.", "Test User", "testuser@mail.com","123 St", "London", "SW1", 1000.0, 0.0);
         customer.setAccountStatus("Suspended");
 
         salesController.addItemToCart(inventoryController.getProducts().get(0));

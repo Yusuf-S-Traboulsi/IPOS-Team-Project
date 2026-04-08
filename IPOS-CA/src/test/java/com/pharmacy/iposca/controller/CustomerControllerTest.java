@@ -17,7 +17,7 @@ public class CustomerControllerTest {
 
     @Test
     public void testFindCustomerById() {
-        controller.addCustomer("Mr.", "John Smith", "123 Main St", "London", "SW1A 1AA", 1000.0);
+        controller.addCustomer("Mr.", "John Smith", "johnsmith@mail.com", "123 Main St", "London", "SW1A 1AA", 1000.0);
         Customer lastCustomer = controller.getCustomerData().get(controller.getCustomerData().size() - 1);
         Customer found = controller.findCustomerById(lastCustomer.getId());
 
@@ -34,13 +34,13 @@ public class CustomerControllerTest {
     @Test
     public void testAddCustomer() {
         int initialSize = controller.getCustomerData().size();
-        controller.addCustomer("Dr.", "Jane Doe", "456 High St", "Manchester", "M1 1AA", 500.0);
+        controller.addCustomer("Dr.", "Jane Doe", "janedoe@mail.com", "456 High St", "Manchester", "M1 1AA", 500.0);
         assertEquals(initialSize + 1, controller.getCustomerData().size(), "Customer count should increase");
     }
 
     @Test
     public void testDeleteCustomerWithNoDebt() {
-        controller.addCustomer("Mr.", "Test User", "789 Road", "Birmingham", "B1 1AA", 200.0);
+        controller.addCustomer("Mr.", "Test User", "testuser@mail.com","789 Road", "Birmingham", "B1 1AA", 200.0);
         Customer lastCustomer = controller.getCustomerData().get(controller.getCustomerData().size() - 1);
 
         boolean deleted = controller.deleteCustomer(lastCustomer);
@@ -49,7 +49,7 @@ public class CustomerControllerTest {
 
     @Test
     public void testDeleteCustomerWithDebt() {
-        controller.addCustomer("Mrs.", "Debt User", "321 Lane", "Leeds", "LS1 1AA", 300.0);
+        controller.addCustomer("Mrs.", "Debt User", "debtuser@mail.com","321 Lane", "Leeds", "LS1 1AA", 300.0);
         Customer lastCustomer = controller.getCustomerData().get(controller.getCustomerData().size() - 1);
         lastCustomer.setCurrentDebt(50.0);
 
@@ -59,7 +59,7 @@ public class CustomerControllerTest {
 
     @Test
     public void testEvaluateAccountStatusesSuspended() {
-        controller.addCustomer("Mr.", "Test Debtor", "100 Debt St", "London", "E1 1AA", 500.0);
+        controller.addCustomer("Mr.", "Test Debtor", "testdebtor@mail.com","100 Debt St", "London", "E1 1AA", 500.0);
         Customer debtor = controller.getCustomerData().get(controller.getCustomerData().size() - 1);
         debtor.setCurrentDebt(100.0);
         debtor.setOldestDebtDate(LocalDate.now().minusDays(35));
@@ -70,7 +70,7 @@ public class CustomerControllerTest {
 
     @Test
     public void testEvaluateAccountStatusesInDefault() {
-        controller.addCustomer("Mr.", "Default Debtor", "200 Debt St", "London", "E2 2AA", 500.0);
+        controller.addCustomer("Mr.", "Default Debtor", "defaultdebtor@mail.com", "200 Debt St", "London", "E2 2AA", 500.0);
         Customer debtor = controller.getCustomerData().get(controller.getCustomerData().size() - 1);
         debtor.setCurrentDebt(100.0);
         debtor.setOldestDebtDate(LocalDate.now().minusDays(70));
@@ -81,7 +81,7 @@ public class CustomerControllerTest {
 
     @Test
     public void testEvaluateAccountStatusesNormal() {
-        controller.addCustomer("Mr.", "Good Customer", "300 Good St", "London", "E3 3AA", 500.0);
+        controller.addCustomer("Mr.", "Good Customer", "goodcustomer@mail.com", "300 Good St", "London", "E3 3AA", 500.0);
         Customer goodCustomer = controller.getCustomerData().get(controller.getCustomerData().size() - 1);
         goodCustomer.setCurrentDebt(50.0);
         goodCustomer.setOldestDebtDate(LocalDate.now().minusDays(10));
