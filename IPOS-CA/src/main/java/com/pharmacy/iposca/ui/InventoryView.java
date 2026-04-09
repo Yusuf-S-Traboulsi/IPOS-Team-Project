@@ -69,7 +69,6 @@ public class InventoryView {
             informationLabel.setStyle("-fx-text-fill: green;");
         });
 
-        // ✅ Bulk Cost Column (editable - SAVES TO DATABASE)
         bulkCostCol.setCellValueFactory(new PropertyValueFactory<>("bulkCost"));
         bulkCostCol.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         bulkCostCol.setOnEditCommit(e -> {
@@ -130,7 +129,7 @@ public class InventoryView {
         // Price Column (editable - SAVES TO DATABASE)
         setupPriceColumn();
 
-        // --- Search and Styling ---
+        //Search and Styling
         setupSearchAndStyle();
     }
 
@@ -250,6 +249,12 @@ public class InventoryView {
                     informationLabel.setText("Product deleted: " + selected.getName());
                     informationLabel.setStyle("-fx-text-fill: green;");
                 } else {
+                    //error when item has stock in the inventory
+                    Alert alert2 = new Alert(Alert.AlertType.ERROR);
+                    alert2.setTitle("ERROR");
+                    alert2.setHeaderText("Cannot delete item with existing stock");
+                    alert2.showAndWait();
+
                     informationLabel.setText("Failed to delete product");
                     informationLabel.setStyle("-fx-text-fill: red;");
                 }

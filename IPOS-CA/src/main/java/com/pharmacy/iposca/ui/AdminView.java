@@ -19,6 +19,8 @@ public class AdminView {
     @FXML private TextField newFullNameField;  // Match FXML
     @FXML private PasswordField newPasswordField;  // Match FXML (lowercase 'w')
     @FXML private ComboBox<String> roleDropdown;
+    @FXML private ComboBox<String> roleUpdateDropdown; //For promoting/demoting user roles
+
     @FXML private Label informationLabel;
 
     private AdminController adminController = AdminController.getInstance();
@@ -63,7 +65,34 @@ public class AdminView {
         userTable.setItems(adminController.getUsers());
         userTable.setEditable(true);
         roleDropdown.getItems().addAll(User.Admin, User.Pharmacist, User.Manager);
+        roleUpdateDropdown.getItems().addAll(User.Admin, User.Pharmacist, User.Manager);
     }
+    @FXML
+    private void handleUpdateRole() {
+        User selected = userTable.getSelectionModel().getSelectedItem();
+        String selectedRole = roleUpdateDropdown.getValue();
+
+        if (selected == null) {
+            informationLabel.setText("No user selected");
+            informationLabel.setStyle("-fx-text-fill: red;");
+            return;
+        }
+        if (selectedRole == null) {
+            informationLabel.setText("Please select a role");
+            informationLabel.setStyle("-fx-text-fill: red;");
+            return;
+        }
+        boolean success = adminController.updateRole(selected, selectedRole);
+        if (success) {
+            userTable.refresh();
+            informationLabel.setText("Role updated for " + selected.getUsername() + " to " + selectedRole);
+            informationLabel.setStyle("-fx-text-fill: green;");
+        } else {
+            informationLabel.setText("Failed to update role");
+            informationLabel.setStyle("-fx-text-fill: red;");
+        }
+    }
+
 
     @FXML
     private void toggleUserStatusLogic() {

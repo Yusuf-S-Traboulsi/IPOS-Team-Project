@@ -34,7 +34,7 @@ public class InventoryController {
      * Load all products from MySQL database on startup
      */
     private void loadProductsFromDatabase() {
-        // ✅ Include supplier_item_id in query
+        //Include supplier_item_id in query
         String sql = "SELECT id, name, bulk_cost, markup_rate, price, stock, low_stock_threshold, supplier_item_id FROM products";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -49,7 +49,7 @@ public class InventoryController {
                         rs.getDouble("markup_rate"),
                         rs.getInt("stock"),
                         rs.getInt("low_stock_threshold"),
-                        rs.getString("supplier_item_id") // ✅ Load supplier_item_id
+                        rs.getString("supplier_item_id") //Load supplier_item_id
                 );
                 masterInventory.add(product);
             }
@@ -210,6 +210,12 @@ public class InventoryController {
     public boolean deleteProduct(Product p) {
         if (p == null) return false;
 
+        //When stock is empty, deleting is allowed, else not
+        if (p.getStock() > 0) {
+            System.out.println("Cannot delete product with stock");
+            return false;
+        }
+
         String sql = "DELETE FROM products WHERE id = ?";
 
         try (Connection conn = DatabaseConnector.getConnection();
@@ -233,7 +239,7 @@ public class InventoryController {
     }
 
     /**
-     * ✅ Decrement stock in database AND local cache (For sales)
+     * Decrement stock in database AND local cache (For sales)
      */
     public boolean decrementLocalStock(int itemID, int quantity) {
         String sql = "UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?";
