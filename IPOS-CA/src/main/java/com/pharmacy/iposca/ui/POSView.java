@@ -374,9 +374,6 @@ public class POSView {
             }
         }
 
-        // Add VAT
-        total = total * (1 + inventoryController.getVatRate());
-
         totalText.setText(String.format("£%.2f", total));
     }
 

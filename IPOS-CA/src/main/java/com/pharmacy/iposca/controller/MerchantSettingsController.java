@@ -40,7 +40,6 @@ public class MerchantSettingsController {
      */
     private void loadMerchantSettings() {
         String sql = "SELECT * FROM merchant_settings LIMIT 1";
-
         try (Connection conn = DatabaseConnector.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -61,7 +60,7 @@ public class MerchantSettingsController {
                 merchantSettings.setRegistrationNumber(rs.getString("registration_number"));
                 merchantSettings.setVatNumber(rs.getString("vat_number"));
 
-                System.out.println("✅ Loaded merchant settings: " + merchantSettings.getCompanyName());
+                System.out.println("Loaded merchant settings: " + merchantSettings.getCompanyName());
             } else {
                 // Create default settings
                 merchantSettings = new MerchantSettings();
@@ -86,7 +85,6 @@ public class MerchantSettingsController {
      */
     private void loadDocumentTemplates() {
         String sql = "SELECT * FROM document_templates WHERE is_active = TRUE";
-
         try (Connection conn = DatabaseConnector.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -109,7 +107,6 @@ public class MerchantSettingsController {
             }
 
             System.out.println("Loaded " + templates.size() + " document templates");
-
         } catch (SQLException e) {
             System.err.println("Error loading templates: " + e.getMessage());
             e.printStackTrace();
@@ -121,7 +118,6 @@ public class MerchantSettingsController {
      */
     public boolean saveMerchantSettings(MerchantSettings settings) {
         String sql;
-
         if (settings.getId() > 0) {
             sql = "UPDATE merchant_settings SET company_name = ?, address_line1 = ?, address_line2 = ?, " +
                     "city = ?, postcode = ?, phone = ?, fax = ?, email = ?, website = ?, " +
@@ -159,12 +155,10 @@ public class MerchantSettingsController {
                 System.out.println("Merchant settings saved");
                 return true;
             }
-
         } catch (SQLException e) {
             System.err.println("Error saving merchant settings: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
@@ -173,7 +167,6 @@ public class MerchantSettingsController {
      */
     public boolean saveTemplate(DocumentTemplate template) {
         String sql;
-
         if (template.getId() > 0) {
             sql = "UPDATE document_templates SET subject_template = ?, body_template = ?, " +
                     "footer_template = ?, is_active = ? WHERE id = ?";
@@ -207,12 +200,10 @@ public class MerchantSettingsController {
                 System.out.println("Template saved: " + template.getTemplateName());
                 return true;
             }
-
         } catch (SQLException e) {
             System.err.println("Error saving template: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
@@ -228,7 +219,6 @@ public class MerchantSettingsController {
      */
     public String processTemplate(String template, Map<String, String> placeholders) {
         if (template == null) return "";
-
         String result = template;
         for (Map.Entry<String, String> entry : placeholders.entrySet()) {
             result = result.replace("{" + entry.getKey() + "}",

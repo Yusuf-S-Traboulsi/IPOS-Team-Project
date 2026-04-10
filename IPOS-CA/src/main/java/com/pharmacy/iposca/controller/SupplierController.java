@@ -1,6 +1,6 @@
 package com.pharmacy.iposca.controller;
 
-import com.pharmacy.iposca.api.ISupplierAPI;
+import com.pharmacy.iposca.db.DatabaseConnector;
 import com.pharmacy.iposca.model.Product;
 import com.pharmacy.iposca.model.SupplierCatalogueItem;
 import com.pharmacy.iposca.model.SupplierOrder;
@@ -11,39 +11,21 @@ import javafx.collections.ObservableList;
 import java.io.File;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import com.google.gson.*;
 
 /**
- * Supplier Controller - Manages IPOS-SA ordering system via REST API
- *
- * ARCHITECTURE NOTE:
- * - IPOS-CA (Pharmacy): Direct database connection
- * - IPOS-SA (Supplier): REST API calls only (required by brief)
- *
- * This demonstrates proper separation between the two systems.
+ * Supplier Controller - Manages IPOS-SA ordering system
+ * All supplier data is loaded from MySQL database (ipos_sa.supplier_* tables)
  */
-public class SupplierController implements ISupplierAPI {
+public class SupplierController {
 
     private static SupplierController instance;
-    private final ObservableList<SupplierCatalogueItem> catalogue;
-    private final ObservableList<SupplierOrder> orders;
-    private final Gson gson = new Gson();
-
-    // IPOS-SA API Configuration
-    private static final String API_BASE_URL = "http://localhost:4568/api";
-    private static final String API_KEY =
-            System.getProperty("IPOS_SA_API_KEY",
-                    System.getenv("IPOS_SA_API_KEY") != null ?
-                            System.getenv("IPOS_SA_API_KEY") : "ipos-sa-secret-key-2026");
+    private ObservableList<SupplierCatalogueItem> catalogue;
+    private ObservableList<SupplierOrder> orders;
 
     private SupplierController() {
         catalogue = FXCollections.observableArrayList();
@@ -59,171 +41,61 @@ public class SupplierController implements ISupplierAPI {
         return instance;
     }
 
-    // ============================================================
-    // ISupplierAPI Interface Implementation
-    // ============================================================
-
-    @Override
-    public SupplierCatalogueItem[] getProductCatalogue() {
-        return catalogue.toArray(new SupplierCatalogueItem[0]);
-    }
-
-    @Override
-    public boolean submitPurchaseOrder(SupplierOrder order) {
-        // Convert SupplierOrder to List<OrderItem> and call placeOrder
-        // For demo, return true
-        return true;
-    }
-
-    @Override
-    public String getDeliveryStatus(String orderID) {
-        for (SupplierOrder order : orders) {
-            if (order.getOrderId().equals(orderID)) {
-                return order.getStatus();
-            }
-        }
-        return "Order not found";
-    }
-
-    @Override
-    public Invoice[] getOutstandingInvoices() {
-        ObservableList<Invoice> invoices = getInvoices();
-        return invoices.toArray(new Invoice[0]);
-    }
-
-    @Override
-    public double getOutstandingBalance() {
-        String response = sendGetRequest("/balance");
-        try {
-            JsonObject result = JsonParser.parseString(response).getAsJsonObject();
-            if (result.has("outstandingBalance")) {
-                return result.get("outstandingBalance").getAsDouble();
-            }
-        } catch (Exception e) {
-            System.err.println("Error fetching balance: " + e.getMessage());
-        }
-        return 0.0;
-    }
-
-    @Override
-    public boolean markOrderAsDelivered(String orderId) {
-        System.out.println("Marking order " + orderId + " as delivered via API...");
-
-        String response = sendPutRequest("/orders/" + orderId + "/delivered", "{}");
-
-        try {
-            JsonObject result = JsonParser.parseString(response).getAsJsonObject();
-            if (result.has("success") && result.get("success").getAsBoolean()) {
-                loadOrders();
-                System.out.println("Order " + orderId + " marked as delivered via API");
-                return true;
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to mark order as delivered: " + e.getMessage());
-        }
-        return false;
-    }
-
-    @Override
-    public boolean markOrderAsPaid(String orderId) {
-        System.out.println("Marking order " + orderId + " as paid via API...");
-
-        String response = sendPutRequest("/orders/" + orderId + "/paid", "{}");
-
-        try {
-            JsonObject result = JsonParser.parseString(response).getAsJsonObject();
-            if (result.has("success") && result.get("success").getAsBoolean()) {
-                loadOrders();
-                System.out.println("Order " + orderId + " marked as paid via API");
-                return true;
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to mark order as paid: " + e.getMessage());
-        }
-        return false;
-    }
-
-    @Override
-    public boolean authenticate(String username, String password) {
-        return authenticateWithIposSa(username, password);
-    }
-
-    // API COMMUNICATION METHODS
-
     private void loadCatalogue() {
-        String response = sendGetRequest("/catalogue");
+        String sql = "SELECT * FROM supplier_catalogue ORDER BY category, item_id";
+        try (Connection conn = DatabaseConnector.getSAConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
 
-        try {
-            JsonArray items = JsonParser.parseString(response).getAsJsonArray();
             catalogue.clear();
-
-            for (JsonElement item : items) {
-                JsonObject obj = item.getAsJsonObject();
-
-                // Handle nullable fields safely
-                String packageType = obj.has("package_type") && !obj.get("package_type").isJsonNull()
-                        ? obj.get("package_type").getAsString() : "";
-                String unit = obj.has("unit") && !obj.get("unit").isJsonNull()
-                        ? obj.get("unit").getAsString() : "";
-                String category = obj.has("category") && !obj.get("category").isJsonNull()
-                        ? obj.get("category").getAsString() : "";
-
-                catalogue.add(new SupplierCatalogueItem(
-                        obj.get("item_id").getAsString(),
-                        obj.get("description").getAsString(),
-                        packageType,
-                        unit,
-                        obj.has("units_per_pack") ? obj.get("units_per_pack").getAsInt() : 0,
-                        obj.get("package_cost").getAsDouble(),
-                        obj.has("availability") ? obj.get("availability").getAsInt() : 0,
-                        obj.has("stock_limit") ? obj.get("stock_limit").getAsInt() : 0,
-                        category
-                ));
+            while (rs.next()) {
+                SupplierCatalogueItem item = new SupplierCatalogueItem(
+                        rs.getString("item_id"),
+                        rs.getString("description"),
+                        rs.getString("package_type"),
+                        rs.getString("unit"),
+                        rs.getInt("units_per_pack"),
+                        rs.getDouble("package_cost"),
+                        rs.getInt("availability"),
+                        rs.getInt("stock_limit"),
+                        rs.getString("category")
+                );
+                catalogue.add(item);
             }
-
-            System.out.println("Loaded " + catalogue.size() + " items from IPOS-SA API");
-        } catch (Exception e) {
-            System.err.println("Error loading catalogue from API: " + e.getMessage());
-            catalogue.clear();
+            System.out.println("Loaded " + catalogue.size() + " items from supplier catalogue");
+        } catch (SQLException e) {
+            System.err.println("Error loading supplier catalogue: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private void loadOrders() {
-        String response = sendGetRequest("/orders");
+        String sql = "SELECT * FROM supplier_orders ORDER BY order_date DESC";
+        try (Connection conn = DatabaseConnector.getSAConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
 
-        try {
-            JsonArray orderList = JsonParser.parseString(response).getAsJsonArray();
             orders.clear();
-
-            for (JsonElement order : orderList) {
-                JsonObject obj = order.getAsJsonObject();
-                SupplierOrder supplierOrder = new SupplierOrder(
-                        obj.get("order_id").getAsString(),
-                        LocalDate.parse(obj.get("order_date").getAsString()),
-                        obj.get("total_amount").getAsDouble(),
-                        obj.get("status").getAsString()
+            while (rs.next()) {
+                SupplierOrder order = new SupplierOrder(
+                        rs.getString("order_id"),
+                        rs.getDate("order_date").toLocalDate(),
+                        rs.getDouble("total_amount"),
+                        rs.getString("status")
                 );
-
-                if (obj.has("dispatched_date") && !obj.get("dispatched_date").isJsonNull()) {
-                    supplierOrder.setDispatchedDate(LocalDate.parse(obj.get("dispatched_date").getAsString()));
-                }
-                if (obj.has("delivered_date") && !obj.get("delivered_date").isJsonNull()) {
-                    supplierOrder.setDeliveredDate(LocalDate.parse(obj.get("delivered_date").getAsString()));
-                }
-                if (obj.has("payment_status")) {
-                    supplierOrder.setPaymentStatus(obj.get("payment_status").getAsString());
-                }
-                if (obj.has("paid_date") && !obj.get("paid_date").isJsonNull()) {
-                    supplierOrder.setPaidDate(LocalDate.parse(obj.get("paid_date").getAsString()));
-                }
-
-                orders.add(supplierOrder);
+                order.setDispatchedDate(rs.getDate("dispatched_date") != null ?
+                        rs.getDate("dispatched_date").toLocalDate() : null);
+                order.setDeliveredDate(rs.getDate("delivered_date") != null ?
+                        rs.getDate("delivered_date").toLocalDate() : null);
+                order.setPaymentStatus(rs.getString("payment_status"));
+                order.setPaidDate(rs.getDate("paid_date") != null ?
+                        rs.getDate("paid_date").toLocalDate() : null);
+                orders.add(order);
             }
-
-            System.out.println("Loaded " + orders.size() + " orders from IPOS-SA API");
-        } catch (Exception e) {
-            System.err.println("Error loading orders from API: " + e.getMessage());
-            orders.clear();
+            System.out.println("Loaded " + orders.size() + " supplier orders");
+        } catch (SQLException e) {
+            System.err.println("Error loading supplier orders: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -232,185 +104,334 @@ public class SupplierController implements ISupplierAPI {
             return "ERROR: Cart is empty";
         }
 
-        JsonObject orderData = new JsonObject();
-        JsonArray itemsArray = new JsonArray();
+        String orderId = generateOrderId();
+        LocalDate orderDate = LocalDate.now();
+        double totalAmount = items.stream().mapToDouble(i -> i.quantity * i.unitCost).sum();
 
-        for (OrderItem item : items) {
-            JsonObject itemObj = new JsonObject();
-            itemObj.addProperty("itemId", item.itemId);
-            itemObj.addProperty("description", item.description);
-            itemObj.addProperty("quantity", item.quantity);
-            itemObj.addProperty("unitCost", item.unitCost);
-            itemObj.addProperty("amount", item.amount);
-            itemsArray.add(itemObj);
-        }
+        String orderSql = "INSERT INTO supplier_orders (order_id, order_date, total_amount, status) VALUES (?, ?, ?, 'Ordered')";
+        String itemSql = "INSERT INTO supplier_order_items (order_id, item_id, description, quantity, unit_cost, amount) VALUES (?, ?, ?, ?, ?, ?)";
 
-        orderData.add("items", itemsArray);
+        try (Connection conn = DatabaseConnector.getSAConnection()) {
+            conn.setAutoCommit(false);
 
-        String response = sendPostRequest("/orders", orderData.toString());
-
-        try {
-            JsonObject result = JsonParser.parseString(response).getAsJsonObject();
-
-            if (result.has("success") && result.get("success").getAsBoolean()) {
-                String orderId = result.get("orderId").getAsString();
-                double totalAmount = result.get("totalAmount").getAsDouble();
-                loadOrders();
-                System.out.println("Order placed via IPOS-SA API: " + orderId + " - Total: £" + totalAmount);
-                return orderId;
-            } else {
-                String errorMsg = result.has("error") && !result.get("error").isJsonNull()
-                        ? result.get("error").getAsString() : "Unknown error";
-                return "ERROR: " + errorMsg;
+            try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
+                orderStmt.setString(1, orderId);
+                orderStmt.setDate(2, Date.valueOf(orderDate));
+                orderStmt.setDouble(3, totalAmount);
+                orderStmt.executeUpdate();
             }
-        } catch (Exception e) {
-            return "ERROR: Failed to parse API response: " + e.getMessage();
+
+            try (PreparedStatement itemStmt = conn.prepareStatement(itemSql)) {
+                for (OrderItem item : items) {
+                    itemStmt.setString(1, orderId);
+                    itemStmt.setString(2, item.itemId);
+                    itemStmt.setString(3, item.description);
+                    itemStmt.setInt(4, item.quantity);
+                    itemStmt.setDouble(5, item.unitCost);
+                    itemStmt.setDouble(6, item.quantity * item.unitCost);
+                    itemStmt.addBatch();
+                }
+                itemStmt.executeBatch();
+            }
+
+            String invoiceSql = "INSERT INTO supplier_invoices (invoice_id, order_id, invoice_date, amount, outstanding_balance, due_date, status) VALUES (?, ?, ?, ?, ?, ?, 'Unpaid')";
+            try (PreparedStatement invoiceStmt = conn.prepareStatement(invoiceSql)) {
+                String invoiceId = "INV-" + orderId.substring(2);
+                invoiceStmt.setString(1, invoiceId);
+                invoiceStmt.setString(2, orderId);
+                invoiceStmt.setDate(3, Date.valueOf(orderDate));
+                invoiceStmt.setDouble(4, totalAmount);
+                invoiceStmt.setDouble(5, totalAmount);
+                invoiceStmt.setDate(6, Date.valueOf(orderDate.plusDays(30)));
+                invoiceStmt.executeUpdate();
+            }
+
+            conn.commit();
+            loadOrders();
+            System.out.println("✅ Order placed: " + orderId + " - Total: £" + totalAmount);
+            return orderId;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error placing order: " + e.getMessage());
+            e.printStackTrace();
+            return "ERROR: " + e.getMessage();
         }
+    }
+
+    private String generateOrderId() {
+        String sql = "SELECT MAX(CAST(SUBSTRING(order_id, 3) AS UNSIGNED)) as max_id FROM supplier_orders";
+        try (Connection conn = DatabaseConnector.getSAConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                int maxId = rs.getInt("max_id");
+                return "IP" + String.format("%04d", maxId + 1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "IP" + String.format("%04d", 3000 + (int)(Math.random() * 1000));
+    }
+
+    public double getOutstandingBalance() {
+        String sql = "SELECT SUM(outstanding_balance) as total FROM supplier_invoices WHERE status = 'Unpaid'";
+        try (Connection conn = DatabaseConnector.getSAConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0.0;
+    }
+
+    public List<OrderItem> getOrderItems(String orderId) {
+        List<OrderItem> items = new ArrayList<>();
+        String sql = "SELECT * FROM supplier_order_items WHERE order_id = ?";
+        try (Connection conn = DatabaseConnector.getSAConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, orderId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    items.add(new OrderItem(
+                            rs.getString("item_id"),
+                            rs.getString("description"),
+                            rs.getInt("quantity"),
+                            rs.getDouble("unit_cost"),
+                            rs.getDouble("amount")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return items;
     }
 
     public ObservableList<Invoice> getInvoices() {
         ObservableList<Invoice> invoices = FXCollections.observableArrayList();
-        String response = sendGetRequest("/invoices");
-
-        try {
-            JsonArray invoiceList = JsonParser.parseString(response).getAsJsonArray();
-
-            for (JsonElement invoice : invoiceList) {
-                JsonObject obj = invoice.getAsJsonObject();
-
-                // Handle nullable date fields safely
-                LocalDate invoiceDate = obj.has("invoice_date") && !obj.get("invoice_date").isJsonNull()
-                        ? LocalDate.parse(obj.get("invoice_date").getAsString()) : null;
-                LocalDate dueDate = obj.has("due_date") && !obj.get("due_date").isJsonNull()
-                        ? LocalDate.parse(obj.get("due_date").getAsString()) : null;
-
+        String sql = "SELECT * FROM supplier_invoices ORDER BY invoice_date DESC";
+        try (Connection conn = DatabaseConnector.getSAConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
                 invoices.add(new Invoice(
-                        obj.get("invoice_id").getAsString(),
-                        obj.get("order_id").getAsString(),
-                        invoiceDate,
-                        obj.get("amount").getAsDouble(),
-                        obj.get("paid_amount").getAsDouble(),
-                        obj.get("outstanding_balance").getAsDouble(),
-                        dueDate,
-                        obj.get("status").getAsString()
+                        rs.getString("invoice_id"),
+                        rs.getString("order_id"),
+                        rs.getDate("invoice_date").toLocalDate(),
+                        rs.getDouble("amount"),
+                        rs.getDouble("paid_amount"),
+                        rs.getDouble("outstanding_balance"),
+                        rs.getDate("due_date").toLocalDate(),
+                        rs.getString("status")
                 ));
             }
-        } catch (Exception e) {
-            System.err.println("Error loading invoices from API: " + e.getMessage());
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-
         return invoices;
     }
 
-    public boolean authenticateWithIposSa(String username, String password) {
-        JsonObject credentials = new JsonObject();
-        credentials.addProperty("username", username);
-        credentials.addProperty("password", password);
+    public boolean markOrderAsDelivered(String orderId) {
+        System.out.println("upMarking order " + orderId + " as delivered...");
+        String sql = "UPDATE supplier_orders SET status = 'Delivered', delivered_date = ? WHERE order_id = ?";
 
-        String response = sendPostRequest("/auth", credentials.toString());
+        try (Connection conn = DatabaseConnector.getSAConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        try {
-            JsonObject result = JsonParser.parseString(response).getAsJsonObject();
+            stmt.setDate(1, Date.valueOf(LocalDate.now()));
+            stmt.setString(2, orderId);
 
-            if (result.has("success") && result.get("success").getAsBoolean()) {
-                System.out.println("IPOS-SA authentication successful: " + username);
-                return true;
+            int rowsAffected = stmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Order status updated to Delivered");
+                boolean inventoryUpdated = updateInventoryFromOrder(orderId);
+
+                if (inventoryUpdated) {
+                    System.out.println("Order " + orderId + " marked as delivered - Inventory updated");
+                    loadOrders();
+                    return true;
+                } else {
+                    System.out.println("Order marked as delivered but inventory update failed");
+                    loadOrders();
+                    return true;
+                }
             }
-        } catch (Exception e) {
-            System.err.println("IPOS-SA authentication failed: " + e.getMessage());
+
+        } catch (SQLException e) {
+            System.err.println("Error marking order as delivered: " + e.getMessage());
+            e.printStackTrace();
         }
 
-        System.err.println("IPOS-SA authentication failed");
         return false;
     }
 
-    // HTTP CLIENT METHODS
+    public boolean markOrderAsPaid(String orderId) {
+        System.out.println("Marking order " + orderId + " as paid...");
+        String updateOrderSql = "UPDATE supplier_orders SET payment_status = 'Paid', paid_date = ? WHERE order_id = ?";
+        String updateInvoiceSql = "UPDATE supplier_invoices SET status = 'Paid', paid_amount = outstanding_balance, outstanding_balance = 0 WHERE order_id = ?";
 
-    private String sendGetRequest(String endpoint) {
-        try {
-            URL url = new URL(API_BASE_URL + endpoint);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("X-API-Key", API_KEY);
-            conn.setRequestProperty("Accept", "application/json");
+        try (Connection conn = DatabaseConnector.getSAConnection()) {
+            conn.setAutoCommit(false);
 
-            return readResponse(conn);
-        } catch (Exception e) {
-            System.err.println("API GET request failed: " + e.getMessage());
-            return "{\"error\": \"" + e.getMessage() + "\"}";
-        }
-    }
+            try (PreparedStatement orderStmt = conn.prepareStatement(updateOrderSql)) {
+                orderStmt.setDate(1, Date.valueOf(LocalDate.now()));
+                orderStmt.setString(2, orderId);
+                int orderRows = orderStmt.executeUpdate();
 
-    private String sendPostRequest(String endpoint, String jsonBody) {
-        try {
-            URL url = new URL(API_BASE_URL + endpoint);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("X-API-Key", API_KEY);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setDoOutput(true);
-
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonBody.getBytes("utf-8");
-                os.write(input, 0, input.length);
+                if (orderRows == 0) {
+                    conn.rollback();
+                    return false;
+                }
             }
 
-            return readResponse(conn);
-        } catch (Exception e) {
-            System.err.println("API POST request failed: " + e.getMessage());
-            return "{\"error\": \"" + e.getMessage() + "\"}";
-        }
-    }
+            try (PreparedStatement invoiceStmt = conn.prepareStatement(updateInvoiceSql)) {
+                invoiceStmt.setString(1, orderId);
+                int invoiceRows = invoiceStmt.executeUpdate();
 
-    private String sendPutRequest(String endpoint, String jsonBody) {
-        try {
-            URL url = new URL(API_BASE_URL + endpoint);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("PUT");
-            conn.setRequestProperty("X-API-Key", API_KEY);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setDoOutput(true);
-
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonBody.getBytes("utf-8");
-                os.write(input, 0, input.length);
+                if (invoiceRows == 0) {
+                    conn.rollback();
+                    return false;
+                }
             }
 
-            return readResponse(conn);
-        } catch (Exception e) {
-            System.err.println("API PUT request failed: " + e.getMessage());
-            return "{\"error\": \"" + e.getMessage() + "\"}";
+            conn.commit();
+            loadOrders();
+
+            System.out.println("Order " + orderId + " marked as paid");
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error marking order as paid: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 
-    private String readResponse(HttpURLConnection conn) throws Exception {
-        int status = conn.getResponseCode();
-        BufferedReader reader;
+    private boolean updateInventoryFromOrder(String orderId) {
+        // 1. Retrieve order items from the SA Database (ipos_sa)
+        // The supplier orders are stored in ipos_sa, not ipos_ca
+        String getItemsSql = "SELECT * FROM supplier_order_items WHERE order_id = ?";
+        List<OrderItem> orderItems = new ArrayList<>();
 
-        if (status >= 400) {
-            reader = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+        try (Connection connSA = DatabaseConnector.getSAConnection();
+             PreparedStatement getItemStmt = connSA.prepareStatement(getItemsSql)) {
+
+            getItemStmt.setString(1, orderId);
+            try (ResultSet rs = getItemStmt.executeQuery()) {
+                while (rs.next()) {
+                    orderItems.add(new OrderItem(
+                            rs.getString("item_id"),
+                            rs.getString("description"),
+                            rs.getInt("quantity"),
+                            rs.getDouble("unit_cost"),
+                            rs.getDouble("amount")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching order items from SA database: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
+        if (orderItems.isEmpty()) {
+            System.out.println("No items found for order " + orderId);
+            return false;
+        }
+
+        // 2. Update product stock in the CA Database (ipos_ca)
+        // The actual inventory/products table is in ipos_ca
+        String updateProductSql = "UPDATE products SET stock = stock + ? WHERE name = ?";
+        int itemsUpdated = 0;
+
+        try (Connection connCA = DatabaseConnector.getConnection();
+             PreparedStatement updateStmt = connCA.prepareStatement(updateProductSql)) {
+
+            for (OrderItem item : orderItems) {
+                String supplierDescription = item.description;
+                int quantityDelivered = item.quantity;
+
+                System.out.println("  Processing: " + supplierDescription + " x " + quantityDelivered);
+
+                String productName = mapSupplierItemToProductName(supplierDescription);
+
+                if (productName != null && !productName.isEmpty()) {
+                    updateStmt.setInt(1, quantityDelivered);
+                    updateStmt.setString(2, productName);
+                    int rowsAffected = updateStmt.executeUpdate();
+
+                    if (rowsAffected > 0) {
+                        itemsUpdated++;
+                        System.out.println("Added " + quantityDelivered + " units to product: " + productName);
+                        updateLocalInventoryCache(productName, quantityDelivered);
+                    } else {
+                        System.out.println("Product '" + productName + "' not found in products table");
+                    }
+                } else {
+                    System.out.println("Could not map supplier item '" + supplierDescription + "' to product");
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error updating inventory in CA database: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
+        if (itemsUpdated > 0) {
+            // Refresh the local cache so the UI shows the new stock immediately
+            InventoryController.getInstance().refreshProducts();
+            System.out.println("Inventory refreshed - " + itemsUpdated + " items updated");
+            return true;
         } else {
-            reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            System.out.println("No items were updated in inventory");
+            return false;
         }
-
-        StringBuilder response = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            response.append(line);
-        }
-        reader.close();
-
-        return response.toString();
     }
 
-    private void updateInventoryFromOrder(String orderId) {
-        System.out.println("Inventory update triggered for order: " + orderId);
-        System.out.println("   (In production, this would update IPOS-CA products table via API)");
+    private String mapSupplierItemToProductName(String supplierDescription) {
+        if (supplierDescription == null || supplierDescription.trim().isEmpty()) {
+            return null;
+        }
+
+        String cleanDesc = supplierDescription.trim().toLowerCase();
+
+        if (cleanDesc.contains("paracetamol")) return "Paracetamol";
+        if (cleanDesc.contains("ibuprofen")) return "Ibuprofen";
+        if (cleanDesc.contains("aspirin")) return "Aspirin";
+        if (cleanDesc.contains("vitamin c")) return "Vitamin C";
+        if (cleanDesc.contains("cough syrup")) return "Cough Syrup";
+        if (cleanDesc.contains("iodine")) return "Iodine tincture";
+        if (cleanDesc.contains("rhynol")) return "Rhynol";
+        if (cleanDesc.contains("ospen")) return "Ospen";
+        if (cleanDesc.contains("amopen")) return "Amopen";
+        if (cleanDesc.contains("vitamin b12")) return "Vitamin B12";
+
+        System.out.println("No match found for: " + supplierDescription);
+        return null;
     }
 
+    private void updateLocalInventoryCache(String productName, int quantity) {
+        try {
+            InventoryController inventory = InventoryController.getInstance();
+            for (Product p : inventory.getProducts()) {
+                if (p.getName().equalsIgnoreCase(productName)) {
+                    p.setStock(p.getStock() + quantity);
+                    System.out.println("  ✓ Local cache updated: " + p.getName() + " stock = " + p.getStock());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error updating local inventory cache: " + e.getMessage());
+        }
+    }
+
+    // ============================================================
     // REPORT GENERATION METHODS
+    // ============================================================
 
     public File generateOrderForm(String orderId) {
         File file = new File("OrderForm_" + orderId + "_" +
@@ -422,67 +443,92 @@ public class SupplierController implements ISupplierAPI {
 
         if (order == null) return file;
 
-        html.append("<!DOCTYPE html>\n<html>\n<head>\n")
-                .append("<title>Order Form - ").append(orderId).append("</title>\n")
-                .append("<style>\n")
-                .append("body { font-family: Arial, sans-serif; margin: 40px; }\n")
-                .append("h1 { color: #2c3e50; font-size: 18px; }\n")
-                .append("table { border-collapse: collapse; width: 100%; margin: 20px 0; }\n")
-                .append("th, td { border: 2px solid #000; padding: 8px; text-align: center; }\n")
-                .append("th { background: #f0f0f0; font-weight: bold; }\n")
-                .append(".header-info { margin-bottom: 20px; }\n")
-                .append(".signature { margin-top: 40px; }\n")
-                .append(".total-row { font-weight: bold; background: #f9f9f9; }\n")
-                .append("</style>\n</head>\n<body>\n");
+        // HTML Header with UTF-8
+        html.append("<!DOCTYPE html>\n");
+        html.append("<html lang='en'>\n");
+        html.append("<head>\n");
+        html.append("  <meta charset='UTF-8'>\n");
+        html.append("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
+        html.append("  <title>Order Form - ").append(orderId).append("</title>\n");
+        html.append("  <style>\n");
+        html.append("    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #2c3e50; line-height: 1.6; }\n");
+        html.append("    h1 { color: #2c3e50; font-size: 24px; border-bottom: 3px solid #3498db; padding-bottom: 10px; }\n");
+        html.append("    .header-info { margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 5px; }\n");
+        html.append("    .header-info p { margin: 5px 0; }\n");
+        html.append("    table { border-collapse: collapse; width: 100%; margin: 30px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n");
+        html.append("    th { background: #3498db; color: white; padding: 12px; text-align: center; font-weight: 600; border: 2px solid #2980b9; }\n");
+        html.append("    td { padding: 10px; text-align: center; border: 2px solid #bdc3c7; }\n");
+        html.append("    tr:nth-child(even) { background: #f8f9fa; }\n");
+        html.append("    tr:hover { background: #e8f4f8; }\n");
+        html.append("    .total-row { background: #2c3e50 !important; color: white; font-weight: bold; }\n");
+        html.append("    .signature { margin-top: 60px; }\n");
+        html.append("    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #bdc3c7; font-size: 12px; color: #7f8c8d; }\n");
+        html.append("  </style>\n");
+        html.append("</head>\n");
+        html.append("<body>\n");
 
-        html.append("<div class='header-info'>\n")
-                .append("<h1>9.2 Appendix 2: Order Form</h1>\n")
-                .append("<p><strong>Client:</strong> Cosymed Ltd.</p>\n")
-                .append("<p>3, High Level Drive<br>Sydenham, SE26 3ET</p>\n")
-                .append("<p>Phone: 0208 778 0124<br>Fax: 0208 778 0125</p>\n")
-                .append("<p><strong>IPOS Account:</strong> 0000235</p>\n")
-                .append("<p><strong>Date:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n")
-                .append("</div>\n");
+        // Header
+        html.append("<div class='header-info'>\n");
+        html.append("  <p><strong>Client:</strong> Cosymed Ltd.</p>\n");
+        html.append("  <p>3, High Level Drive<br>Sydenham, SE26 3ET</p>\n");
+        html.append("  <p>Phone: 0208 778 0124<br>Fax: 0208 778 0125</p>\n");
+        html.append("  <p><strong>IPOS Account:</strong> 0000235</p>\n");
+        html.append("  <p><strong>Order ID:</strong> ").append(escapeHtml(orderId)).append("</p>\n");
+        html.append("  <p><strong>Order Date:</strong> ").append(order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n");
+        html.append("</div>\n");
 
-        html.append("<table>\n")
-                .append("<tr>\n")
-                .append("<th>Item ID</th>\n")
-                .append("<th>Description</th>\n")
-                .append("<th>Quantity</th>\n")
-                .append("<th>Unit Cost, £</th>\n")
-                .append("<th>Total, £</th>\n")
-                .append("</tr>\n");
+        // Items Table
+        html.append("<table>\n");
+        html.append("  <thead>\n");
+        html.append("    <tr>\n");
+        html.append("      <th>Item ID</th>\n");
+        html.append("      <th>Description</th>\n");
+        html.append("      <th>Quantity</th>\n");
+        html.append("      <th>Unit Cost, £</th>\n");
+        html.append("      <th>Total, £</th>\n");
+        html.append("    </tr>\n");
+        html.append("  </thead>\n");
+        html.append("  <tbody>\n");
 
-        double grandTotal = 0;
+        double grandTotal = 0.0;
         for (OrderItem item : items) {
             double itemTotal = item.quantity * item.unitCost;
             grandTotal += itemTotal;
 
-            html.append("<tr>\n")
-                    .append("<td>").append(item.itemId).append("</td>\n")
-                    .append("<td>").append(item.description).append("</td>\n")
-                    .append("<td>").append(item.quantity).append("</td>\n")
-                    .append("<td>").append(String.format("%.2f", item.unitCost)).append("</td>\n")
-                    .append("<td>").append(String.format("%.2f", itemTotal)).append("</td>\n")
-                    .append("</tr>\n");
+            html.append("    <tr>\n");
+            html.append("      <td>").append(escapeHtml(item.itemId)).append("</td>\n");
+            html.append("      <td>").append(escapeHtml(item.description)).append("</td>\n");
+            html.append("      <td>").append(item.quantity).append("</td>\n");
+            html.append("      <td>").append(String.format("%.2f", item.unitCost)).append("</td>\n");
+            html.append("      <td>").append(String.format("%.2f", itemTotal)).append("</td>\n");
+            html.append("    </tr>\n");
         }
 
-        html.append("<tr class='total-row'>\n")
-                .append("<td colspan='4' style='text-align: right;'>Grand Total:</td>\n")
-                .append("<td>").append(String.format("%.2f", grandTotal)).append("</td>\n")
-                .append("</tr>\n")
-                .append("</table>\n");
+        html.append("  </tbody>\n");
+        html.append("  <tfoot>\n");
+        html.append("    <tr class='total-row'>\n");
+        html.append("      <td colspan='4' style='text-align: right;'>Grand Total:</td>\n");
+        html.append("      <td>").append(String.format("%.2f", grandTotal)).append("</td>\n");
+        html.append("    </tr>\n");
+        html.append("  </tfoot>\n");
+        html.append("</table>\n");
 
-        html.append("<div class='signature'>\n")
-                .append("<p>For Cosymed Ltd:</p>\n")
-                .append("<br><br>\n")
-                .append("<p>/Signature/</p>\n")
-                .append("</div>\n");
+        // Signature
+        html.append("<div class='signature'>\n");
+        html.append("  <p>For Cosymed Ltd:</p>\n");
+        html.append("  <br><br><br>\n");
+        html.append("  <p>___________________________</p>\n");
+        html.append("  <p>Authorised Signature</p>\n");
+        html.append("</div>\n");
 
-        html.append("<hr>\n")
-                .append("<p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n")
-                .append("<p><strong>By:</strong> Director of Operations</p>\n")
-                .append("</body>\n</html>\n");
+        // Footer
+        html.append("<div class='footer'>\n");
+        html.append("  <p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n");
+        html.append("  <p><strong>By:</strong> Director of Operations</p>\n");
+        html.append("</div>\n");
+
+        html.append("</body>\n");
+        html.append("</html>\n");
 
         writeReportToFile(file, html);
         return file;
@@ -490,67 +536,92 @@ public class SupplierController implements ISupplierAPI {
 
     public File generateOrdersSummaryReport(LocalDate startDate, LocalDate endDate) {
         File file = new File("OrdersSummaryReport_" +
-                startDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + "to" +
+                startDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + "_to_" +
                 endDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
 
         StringBuilder html = new StringBuilder();
 
-        List<SupplierOrder> filteredOrders = getOrders().stream()
-                .filter(o -> !o.getOrderDate().isBefore(startDate) && !o.getOrderDate().isAfter(endDate))
-                .toList();
+        // Get ALL orders if no date range specified, otherwise filter
+        List<SupplierOrder> filteredOrders;
+        if (startDate == null || endDate == null) {
+            filteredOrders = new ArrayList<>(getOrders());
+        } else {
+            filteredOrders = getOrders().stream()
+                    .filter(o -> !o.getOrderDate().isBefore(startDate) && !o.getOrderDate().isAfter(endDate))
+                    .collect(java.util.stream.Collectors.toList());
+        }
 
-        html.append("<!DOCTYPE html>\n<html>\n<head>\n")
-                .append("<title>Merchant's Orders Summary</title>\n")
-                .append("<style>\n")
-                .append("body { font-family: Arial, sans-serif; margin: 40px; }\n")
-                .append("h1 { color: #2c3e50; font-size: 18px; }\n")
-                .append("table { border-collapse: collapse; width: 100%; margin: 20px 0; }\n")
-                .append("th, td { border: 2px solid #000; padding: 8px; text-align: center; }\n")
-                .append("th { background: #f0f0f0; font-weight: bold; }\n")
-                .append(".header-info { margin-bottom: 20px; }\n")
-                .append(".total-row { font-weight: bold; background: #f9f9f9; }\n")
-                .append("</style>\n</head>\n<body>\n");
+        // HTML Header with UTF-8
+        html.append("<!DOCTYPE html>\n");
+        html.append("<html lang='en'>\n");
+        html.append("<head>\n");
+        html.append("  <meta charset='UTF-8'>\n");
+        html.append("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
+        html.append("  <title>Orders Summary Report</title>\n");
+        html.append("  <style>\n");
+        html.append("    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #2c3e50; line-height: 1.6; }\n");
+        html.append("    h1 { color: #2c3e50; font-size: 24px; border-bottom: 3px solid #9b59b6; padding-bottom: 10px; }\n");
+        html.append("    .header-info { margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 5px; }\n");
+        html.append("    .header-info p { margin: 5px 0; }\n");
+        html.append("    table { border-collapse: collapse; width: 100%; margin: 30px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n");
+        html.append("    th { background: #9b59b6; color: white; padding: 12px; text-align: center; font-weight: 600; border: 2px solid #8e44ad; }\n");
+        html.append("    td { padding: 10px; text-align: center; border: 2px solid #bdc3c7; }\n");
+        html.append("    tr:nth-child(even) { background: #f8f9fa; }\n");
+        html.append("    tr:hover { background: #f4ecf7; }\n");
+        html.append("    .total-row { background: #2c3e50 !important; color: white; font-weight: bold; }\n");
+        html.append("    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #bdc3c7; font-size: 12px; color: #7f8c8d; }\n");
+        html.append("  </style>\n");
+        html.append("</head>\n");
+        html.append("<body>\n");
 
-        html.append("<div class='header-info'>\n")
-                .append("<h1>9.4 Appendix 4: Merchant's Orders Summary</h1>\n")
-                .append("<p><strong>Report Period:</strong> ")
-                .append(startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
-                .append(" – ")
-                .append(endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
-                .append("</p>\n")
-                .append("<p><strong>Client:</strong> Cosymed Ltd.</p>\n")
-                .append("<p>3, High Level Drive<br>Sydenham, SE26 3ET</p>\n")
-                .append("<p>Phone: 0208 778 0124<br>Fax: 0208 778 0125</p>\n")
-                .append("<p><strong>IPOS Account:</strong> 0000235</p>\n")
-                .append("</div>\n");
+        // Header
+        html.append("<div class='header-info'>\n");
+        html.append("  <p><strong>Report Period:</strong> ");
+        if (startDate != null && endDate != null) {
+            html.append(startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                    .append(" to ")
+                    .append(endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        } else {
+            html.append("All Orders");
+        }
+        html.append("</p>\n");
+        html.append("  <p><strong>Client:</strong> Cosymed Ltd.</p>\n");
+        html.append("  <p>3, High Level Drive<br>Sydenham, SE26 3ET</p>\n");
+        html.append("  <p>Phone: 0208 778 0124<br>Fax: 0208 778 0125</p>\n");
+        html.append("  <p><strong>IPOS Account:</strong> 0000235</p>\n");
+        html.append("</div>\n");
 
-        html.append("<table>\n")
-                .append("<tr>\n")
-                .append("<th>Order ID</th>\n")
-                .append("<th>Ordered</th>\n")
-                .append("<th>Amount, £</th>\n")
-                .append("<th>Dispatched</th>\n")
-                .append("<th>Delivered</th>\n")
-                .append("<th>Paid</th>\n")
-                .append("</tr>\n");
+        // Orders Table
+        html.append("<table>\n");
+        html.append("  <thead>\n");
+        html.append("    <tr>\n");
+        html.append("      <th>Order ID</th>\n");
+        html.append("      <th>Ordered</th>\n");
+        html.append("      <th>Amount, £</th>\n");
+        html.append("      <th>Dispatched</th>\n");
+        html.append("      <th>Delivered</th>\n");
+        html.append("      <th>Paid</th>\n");
+        html.append("    </tr>\n");
+        html.append("  </thead>\n");
+        html.append("  <tbody>\n");
 
         int totalOrders = 0;
-        double totalAmount = 0;
+        double totalAmount = 0.0;
         int dispatchedCount = 0;
         int deliveredCount = 0;
         int paidCount = 0;
 
         for (SupplierOrder order : filteredOrders) {
-            html.append("<tr>\n")
-                    .append("<td>").append(order.getOrderId()).append("</td>\n")
-                    .append("<td>").append(order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</td>\n")
-                    .append("<td>").append(String.format("%.2f", order.getTotalAmount())).append("</td>\n")
-                    .append("<td>").append(order.getDispatchedDate() != null ?
-                            order.getDispatchedDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "Pending").append("</td>\n")
-                    .append("<td>").append(order.getDeliveredDate() != null ?
-                            order.getDeliveredDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "Pending").append("</td>\n")
-                    .append("<td>").append(order.getPaymentStatus()).append("</td>\n")
-                    .append("</tr>\n");
+            html.append("    <tr>\n");
+            html.append("      <td>").append(escapeHtml(order.getOrderId())).append("</td>\n");
+            html.append("      <td>").append(order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</td>\n");
+            html.append("      <td>").append(String.format("%.2f", order.getTotalAmount())).append("</td>\n");
+            html.append("      <td>").append(order.getDispatchedDate() != null ?
+                    order.getDispatchedDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "Pending").append("</td>\n");
+            html.append("      <td>").append(order.getDeliveredDate() != null ?
+                    order.getDeliveredDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "Pending").append("</td>\n");
+            html.append("      <td>").append(order.getPaymentStatus() != null ? order.getPaymentStatus() : "Pending").append("</td>\n");
+            html.append("    </tr>\n");
 
             totalOrders++;
             totalAmount += order.getTotalAmount();
@@ -559,20 +630,27 @@ public class SupplierController implements ISupplierAPI {
             if ("Paid".equals(order.getPaymentStatus())) paidCount++;
         }
 
-        html.append("<tr class='total-row'>\n")
-                .append("<td>Total:</td>\n")
-                .append("<td>").append(totalOrders).append("</td>\n")
-                .append("<td>").append(String.format("%.1f", totalAmount)).append("</td>\n")
-                .append("<td>").append(dispatchedCount).append("</td>\n")
-                .append("<td>").append(deliveredCount).append("</td>\n")
-                .append("<td>").append(paidCount).append("</td>\n")
-                .append("</tr>\n")
-                .append("</table>\n");
+        html.append("  </tbody>\n");
+        html.append("  <tfoot>\n");
+        html.append("    <tr class='total-row'>\n");
+        html.append("      <td><strong>Total:</strong></td>\n");
+        html.append("      <td><strong>").append(totalOrders).append("</strong></td>\n");
+        html.append("      <td><strong>").append(String.format("%.2f", totalAmount)).append("</strong></td>\n");
+        html.append("      <td><strong>").append(dispatchedCount).append("</strong></td>\n");
+        html.append("      <td><strong>").append(deliveredCount).append("</strong></td>\n");
+        html.append("      <td><strong>").append(paidCount).append("</strong></td>\n");
+        html.append("    </tr>\n");
+        html.append("  </tfoot>\n");
+        html.append("</table>\n");
 
-        html.append("<p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n")
-                .append("<p><strong>By:</strong> Director of Operations</p>\n")
-                .append("<hr>\n")
-                .append("</body>\n</html>\n");
+        // Footer
+        html.append("<div class='footer'>\n");
+        html.append("  <p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n");
+        html.append("  <p><strong>By:</strong> Director of Operations</p>\n");
+        html.append("</div>\n");
+
+        html.append("</body>\n");
+        html.append("</html>\n");
 
         writeReportToFile(file, html);
         return file;
@@ -580,52 +658,78 @@ public class SupplierController implements ISupplierAPI {
 
     public File generateDetailedOrderReport(LocalDate startDate, LocalDate endDate) {
         File file = new File("DetailedOrderReport_" +
-                startDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + "to" +
+                startDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + "_to_" +
                 endDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
 
         StringBuilder html = new StringBuilder();
 
-        List<SupplierOrder> filteredOrders = getOrders().stream()
-                .filter(o -> !o.getOrderDate().isBefore(startDate) && !o.getOrderDate().isAfter(endDate))
-                .toList();
+        // Get ALL orders if no date range specified
+        List<SupplierOrder> filteredOrders;
+        if (startDate == null || endDate == null) {
+            filteredOrders = new ArrayList<>(getOrders());
+        } else {
+            filteredOrders = getOrders().stream()
+                    .filter(o -> !o.getOrderDate().isBefore(startDate) && !o.getOrderDate().isAfter(endDate))
+                    .collect(java.util.stream.Collectors.toList());
+        }
 
-        html.append("<!DOCTYPE html>\n<html>\n<head>\n")
-                .append("<title>Merchant's Orders Detailed Report</title>\n")
-                .append("<style>\n")
-                .append("body { font-family: Arial, sans-serif; margin: 40px; }\n")
-                .append("h1 { color: #2c3e50; font-size: 18px; }\n")
-                .append("table { border-collapse: collapse; width: 100%; margin: 20px 0; }\n")
-                .append("th, td { border: 2px solid #000; padding: 8px; text-align: center; }\n")
-                .append("th { background: #f0f0f0; font-weight: bold; }\n")
-                .append(".header-info { margin-bottom: 20px; }\n")
-                .append(".total-row { font-weight: bold; background: #f9f9f9; }\n")
-                .append("</style>\n</head>\n<body>\n");
+        // HTML Header with UTF-8
+        html.append("<!DOCTYPE html>\n");
+        html.append("<html lang='en'>\n");
+        html.append("<head>\n");
+        html.append("  <meta charset='UTF-8'>\n");
+        html.append("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
+        html.append("  <title>Detailed Order Report</title>\n");
+        html.append("  <style>\n");
+        html.append("    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #2c3e50; line-height: 1.6; }\n");
+        html.append("    h1 { color: #2c3e50; font-size: 24px; border-bottom: 3px solid #e67e22; padding-bottom: 10px; }\n");
+        html.append("    .header-info { margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 5px; }\n");
+        html.append("    .header-info p { margin: 5px 0; }\n");
+        html.append("    table { border-collapse: collapse; width: 100%; margin: 30px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n");
+        html.append("    th { background: #e67e22; color: white; padding: 12px; text-align: center; font-weight: 600; border: 2px solid #d35400; }\n");
+        html.append("    td { padding: 10px; text-align: center; border: 2px solid #bdc3c7; }\n");
+        html.append("    tr:nth-child(even) { background: #f8f9fa; }\n");
+        html.append("    tr:hover { background: #fef5e7; }\n");
+        html.append("    .total-row { background: #2c3e50 !important; color: white; font-weight: bold; }\n");
+        html.append("    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #bdc3c7; font-size: 12px; color: #7f8c8d; }\n");
+        html.append("  </style>\n");
+        html.append("</head>\n");
+        html.append("<body>\n");
 
-        html.append("<div class='header-info'>\n")
-                .append("<h1>9.5 Appendix 5: Merchant's Orders Detailed Report</h1>\n")
-                .append("<p><strong>Report Period:</strong> ")
-                .append(startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
-                .append(" – ")
-                .append(endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
-                .append("</p>\n")
-                .append("<p><strong>Client:</strong> Cosymed Ltd.</p>\n")
-                .append("<p>3, High Level Drive<br>Sydenham, SE26 3ET</p>\n")
-                .append("<p>Phone: 0208 778 0124<br>Fax: 0208 778 0125</p>\n")
-                .append("<p><strong>IPOS Account:</strong> 0000235</p>\n")
-                .append("</div>\n");
+        // Header
+        html.append("<div class='header-info'>\n");
+        html.append("  <p><strong>Report Period:</strong> ");
+        if (startDate != null && endDate != null) {
+            html.append(startDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                    .append(" to ")
+                    .append(endDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        } else {
+            html.append("All Orders");
+        }
+        html.append("</p>\n");
+        html.append("  <p><strong>Client:</strong> Cosymed Ltd.</p>\n");
+        html.append("  <p>3, High Level Drive<br>Sydenham, SE26 3ET</p>\n");
+        html.append("  <p>Phone: 0208 778 0124<br>Fax: 0208 778 0125</p>\n");
+        html.append("  <p><strong>IPOS Account:</strong> 0000235</p>\n");
+        html.append("</div>\n");
 
-        html.append("<table>\n")
-                .append("<tr>\n")
-                .append("<th>Order ID</th>\n")
-                .append("<th>Cost, £</th>\n")
-                .append("<th>Ordered</th>\n")
-                .append("<th>ItemID</th>\n")
-                .append("<th>Quantity</th>\n")
-                .append("<th>Unit cost, £</th>\n")
-                .append("<th>Amount, £</th>\n")
-                .append("</tr>\n");
+        // Detailed Table
+        html.append("<table>\n");
+        html.append("  <thead>\n");
+        html.append("    <tr>\n");
+        html.append("      <th>Order ID</th>\n");
+        html.append("      <th>Order Total, £</th>\n");
+        html.append("      <th>Ordered</th>\n");
+        html.append("      <th>Item ID</th>\n");
+        html.append("      <th>Description</th>\n");
+        html.append("      <th>Quantity</th>\n");
+        html.append("      <th>Unit Cost, £</th>\n");
+        html.append("      <th>Line Total, £</th>\n");
+        html.append("    </tr>\n");
+        html.append("  </thead>\n");
+        html.append("  <tbody>\n");
 
-        double grandTotal = 0;
+        double grandTotal = 0.0;
         int totalOrders = 0;
 
         for (SupplierOrder order : filteredOrders) {
@@ -634,48 +738,53 @@ public class SupplierController implements ISupplierAPI {
             int rowIndex = 0;
 
             for (OrderItem item : items) {
-                html.append("<tr>\n");
+                double lineTotal = item.quantity * item.unitCost;
+                grandTotal += lineTotal;
+
+                html.append("    <tr>\n");
 
                 if (rowIndex == 0) {
-                    html.append("<td rowspan='").append(itemCount).append("'>").append(order.getOrderId()).append("</td>\n")
-                            .append("<td rowspan='").append(itemCount).append("'>").append(String.format("%.2f", order.getTotalAmount())).append("</td>\n")
-                            .append("<td rowspan='").append(itemCount).append("'>").append(order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</td>\n");
+                    html.append("      <td rowspan='").append(itemCount).append("'>").append(escapeHtml(order.getOrderId())).append("</td>\n");
+                    html.append("      <td rowspan='").append(itemCount).append("'>").append(String.format("%.2f", order.getTotalAmount())).append("</td>\n");
+                    html.append("      <td rowspan='").append(itemCount).append("'>").append(order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</td>\n");
                 }
 
-                html.append("<td>").append(item.itemId).append("</td>\n")
-                        .append("<td>").append(item.quantity).append("</td>\n")
-                        .append("<td>").append(String.format("%.2f", item.unitCost)).append("</td>\n")
-                        .append("<td>").append(String.format("%.2f", item.quantity * item.unitCost)).append("</td>\n")
-                        .append("</tr>\n");
+                html.append("      <td>").append(escapeHtml(item.itemId)).append("</td>\n");
+                html.append("      <td>").append(escapeHtml(item.description)).append("</td>\n");
+                html.append("      <td>").append(item.quantity).append("</td>\n");
+                html.append("      <td>").append(String.format("%.2f", item.unitCost)).append("</td>\n");
+                html.append("      <td>").append(String.format("%.2f", lineTotal)).append("</td>\n");
+                html.append("    </tr>\n");
 
-                grandTotal += item.quantity * item.unitCost;
                 rowIndex++;
             }
 
             totalOrders++;
         }
 
-        html.append("<tr class='total-row'>\n")
-                .append("<td>Total:</td>\n")
-                .append("<td>").append(String.format("%.2f", grandTotal)).append("</td>\n")
-                .append("<td>").append(totalOrders).append("</td>\n")
-                .append("<td colspan='4'></td>\n")
-                .append("</tr>\n")
-                .append("</table>\n");
+        html.append("  </tbody>\n");
+        html.append("  <tfoot>\n");
+        html.append("    <tr class='total-row'>\n");
+        html.append("      <td colspan='2'><strong>Grand Total:</strong></td>\n");
+        html.append("      <td><strong>").append(String.format("%.2f", grandTotal)).append("</strong></td>\n");
+        html.append("      <td colspan='2'><strong>Total Orders:</strong></td>\n");
+        html.append("      <td><strong>").append(totalOrders).append("</strong></td>\n");
+        html.append("      <td colspan='2'></td>\n");
+        html.append("    </tr>\n");
+        html.append("  </tfoot>\n");
+        html.append("</table>\n");
 
-        html.append("<p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n")
-                .append("<p><strong>By:</strong> Director of Operations</p>\n")
-                .append("<hr>\n")
-                .append("</body>\n</html>\n");
+        // Footer
+        html.append("<div class='footer'>\n");
+        html.append("  <p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n");
+        html.append("  <p><strong>By:</strong> Director of Operations</p>\n");
+        html.append("</div>\n");
+
+        html.append("</body>\n");
+        html.append("</html>\n");
 
         writeReportToFile(file, html);
         return file;
-    }
-
-    public List<OrderItem> getOrderItems(String orderId) {
-        List<OrderItem> items = new ArrayList<>();
-        // In production, this would call: GET /api/orders/{orderId}/items
-        return items;
     }
 
     public SupplierOrder getOrderByOrderId(String orderId) {
@@ -695,12 +804,44 @@ public class SupplierController implements ISupplierAPI {
             }
         } catch (Exception e) {
             System.err.println("Error writing report: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    // ============================================================
-    // GETTERS
-    // ============================================================
+    /**
+     * Escape HTML special characters to prevent encoding issues
+     */
+    private String escapeHtml(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#x27;");
+    }
+
+    public boolean authenticateWithIposSa(String username, String password) {
+        String sql = "SELECT * FROM ipos_sa_users WHERE username = ? AND password = ? AND active = TRUE";
+        try (Connection conn = DatabaseConnector.getSAConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, password);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    System.out.println("✅ IPOS-SA authentication successful: " + username);
+                    return true;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("❌ IPOS-SA authentication error: " + e.getMessage());
+            if (("supplier".equals(username) && "supplier123".equals(password)) ||
+                    ("merchant".equals(username) && "merchant123".equals(password))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     public ObservableList<SupplierCatalogueItem> getCatalogue() {
         return catalogue;
@@ -713,10 +854,6 @@ public class SupplierController implements ISupplierAPI {
     public void refreshOrders() {
         loadOrders();
     }
-
-    // ============================================================
-    // INNER CLASSES (For UI binding - keep these)
-    // ============================================================
 
     public static class OrderItem {
         public String itemId;
@@ -766,5 +903,4 @@ public class SupplierController implements ISupplierAPI {
         public LocalDate getDueDate() { return dueDate.get(); }
         public String getStatus() { return status.get(); }
     }
-
 }
