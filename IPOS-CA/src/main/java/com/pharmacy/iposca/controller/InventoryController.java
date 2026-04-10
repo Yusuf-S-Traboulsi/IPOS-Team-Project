@@ -240,6 +240,12 @@ public class InventoryController {
     public boolean deleteProduct(Product p) {
         if (p == null) return false;
 
+        //When stock is empty, deleting is allowed, else not
+        if (p.getStock() > 0) {
+            System.out.println("Cannot delete product with stock");
+            return false;
+        }
+
         String sql = "DELETE FROM products WHERE id = ?";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
