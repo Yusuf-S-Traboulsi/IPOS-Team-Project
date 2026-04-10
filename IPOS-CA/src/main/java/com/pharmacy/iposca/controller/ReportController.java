@@ -12,7 +12,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Report Controller - Generates various business reports
+ * All reports use data from ipos_ca database
+ */
 public class ReportController {
+
     private InventoryController inventory;
     private CustomerController customers;
     private SalesController sales;
@@ -23,7 +28,6 @@ public class ReportController {
         this.sales = sal;
     }
 
-    // REPORT 1: TURNOVER - OverTURN
     public File generateTurnoverReport(LocalDate startDate, LocalDate endDate) {
         File file = new File("TurnoverReport_" + startDate + "_to_" + endDate + ".html");
         StringBuilder html = new StringBuilder();
@@ -77,7 +81,6 @@ public class ReportController {
         return file;
     }
 
-    //  REPORT 2: STOCK AVAILABILITY
     public File generateStockReport() {
         File file = new File("StockReport_" + LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
         StringBuilder html = new StringBuilder();
@@ -125,16 +128,14 @@ public class ReportController {
         return file;
     }
 
-    // REPORT 3: AGGREGATED DEBT CHANGE - Everyone needs change - pennies on the dollar
     public File generateDebtChangeReport(LocalDate startDate, LocalDate endDate) {
         File file = new File("DebtChangeReport_" + startDate + "_to_" + endDate + ".html");
         StringBuilder html = new StringBuilder();
 
-        // Calculate aggregated debt
+        // Calculate aggregated debt from all customers
         double openingDebt = customers.getCustomerData().stream()
                 .mapToDouble(Customer::getCurrentDebt).sum();
 
-        // For prototype: simulate payments (in production, track actual payments) - Funny I know
         double paymentsReceived = 0;
         double closingDebt = openingDebt - paymentsReceived;
 
@@ -167,23 +168,26 @@ public class ReportController {
         return file;
     }
 
-    // HELPERS - Do they help tho
-    private void buildReportHeader(StringBuilder html, String title, LocalDate start, LocalDate end) {
+
+    private void buildReportHeader(StringBuilder html, String title, LocalDate startDate, LocalDate endDate) {
         html.append("<!DOCTYPE html>")
                 .append("<html><head><title>").append(title).append("</title>")
                 .append("<style>")
-                .append("body { font-family: Arial, sans-serif; margin: 40px; }")
-                .append("h1 { color: #2c3e50; }")
-                .append("table { border-collapse: collapse; width: 100%; margin: 20px 0; }")
+                .append("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #2c3e50; line-height: 1.6; }")
+                .append("h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }")
+                .append("h3 { color: #34495e; margin-top: 30px; }")
+                .append("table { border-collapse: collapse; width: 100%; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }")
                 .append("th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }")
-                .append("th { background: #3498db; color: white; }")
-                .append("tr:nth-child(even) { background: #f9f9f9; }")
-                .append(".summary-box { background: #ecf0f1; padding: 20px; margin: 20px 0; border-left: 4px solid #3498db; }")
+                .append("th { background: #3498db; color: white; font-weight: 600; }")
+                .append("tr:nth-child(even) { background: #f8f9fa; }")
+                .append("tr:hover { background: #e8f4f8; }")
+                .append(".summary-box { background: #ecf0f1; padding: 20px; margin: 20px 0; border-left: 4px solid #3498db; border-radius: 5px; }")
+                .append("hr { border: none; border-top: 2px solid #bdc3c7; margin: 30px 0; }")
                 .append("</style>")
                 .append("</head><body>")
                 .append("<h1>").append(title).append("</h1>")
-                .append("<p><strong>Period:</strong> ").append(start.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")))
-                .append(" to ").append(end.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"))).append("</p>");
+                .append("<p><strong>Period:</strong> ").append(startDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")))
+                .append(" to ").append(endDate.format(DateTimeFormatter.ofPattern("dd MMMM yyyy"))).append("</p>");
     }
 
     private void buildReportFooter(StringBuilder html) {

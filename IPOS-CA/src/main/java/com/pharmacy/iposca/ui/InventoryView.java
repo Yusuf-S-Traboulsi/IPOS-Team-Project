@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -53,10 +54,8 @@ public class InventoryView {
             }
         });
 
-        // --- Column Setup ---
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
 
-        // Name Column (editable - SAVES TO DATABASE)
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         nameCol.setCellFactory(TextFieldTableCell.forTableColumn());
         nameCol.setOnEditCommit(e -> {
@@ -69,7 +68,6 @@ public class InventoryView {
             informationLabel.setStyle("-fx-text-fill: green;");
         });
 
-        // ✅ Bulk Cost Column (editable - SAVES TO DATABASE)
         bulkCostCol.setCellValueFactory(new PropertyValueFactory<>("bulkCost"));
         bulkCostCol.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         bulkCostCol.setOnEditCommit(e -> {
@@ -263,7 +261,6 @@ public class InventoryView {
     @FXML
     private void generateLowStockReport() {
         List<Product> items = logic.getLowStockItems();
-
         String generatedBy = "Unknown User";
         String userRole = "";
 
@@ -274,237 +271,87 @@ public class InventoryView {
                 generatedBy = currentUser.getUsername();
                 userRole = " (" + currentUser.getRole() + ")";
             }
-        } catch (Exception e) {
-            // Fallback to default
-        }
-
-        final String finalGeneratedBy = generatedBy;
-        final String finalUserRole = userRole;
+        } catch (Exception e) { /* Fallback */ }
 
         File reportFile = new File("LowStockReport_" +
                 LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
 
         StringBuilder html = new StringBuilder();
 
-        // ===== PROFESSIONAL HTML HEADER WITH CSS =====
-        html.append("<!DOCTYPE html>\n");
-        html.append("<html lang='en'>\n");
-        html.append("<head>\n");
-        html.append("  <meta charset='UTF-8'>\n");
-        html.append("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
-        html.append("  <title>Low Stock Report - InfoPharma Ltd</title>\n");
-        html.append("  <style>\n");
-        html.append("    * { margin: 0; padding: 0; box-sizing: border-box; }\n");
-        html.append("    body {\n");
-        html.append("      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n");
-        html.append("      background: #f5f6fa;\n");
-        html.append("      color: #2c3e50;\n");
-        html.append("      line-height: 1.6;\n");
-        html.append("      padding: 30px;\n");
-        html.append("    }\n");
-        html.append("    .container {\n");
-        html.append("      max-width: 1000px;\n");
-        html.append("      margin: 0 auto;\n");
-        html.append("      background: white;\n");
-        html.append("      padding: 40px;\n");
-        html.append("      box-shadow: 0 0 20px rgba(0,0,0,0.1);\n");
-        html.append("      border-radius: 10px;\n");
-        html.append("    }\n");
-        html.append("    .header {\n");
-        html.append("      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n");
-        html.append("      color: white;\n");
-        html.append("      padding: 30px;\n");
-        html.append("      border-radius: 10px 10px 0 0;\n");
-        html.append("      margin: -40px -40px 30px -40px;\n");
-        html.append("    }\n");
-        html.append("    .header h1 {\n");
-        html.append("      font-size: 28px;\n");
-        html.append("      margin-bottom: 10px;\n");
-        html.append("    }\n");
-        html.append("    .header p {\n");
-        html.append("      opacity: 0.9;\n");
-        html.append("      font-size: 14px;\n");
-        html.append("    }\n");
-        html.append("    .info-box {\n");
-        html.append("      background: #f8f9fa;\n");
-        html.append("      border-left: 4px solid #667eea;\n");
-        html.append("      padding: 20px;\n");
-        html.append("      margin: 20px 0;\n");
-        html.append("      border-radius: 5px;\n");
-        html.append("    }\n");
-        html.append("    .info-box p {\n");
-        html.append("      margin: 5px 0;\n");
-        html.append("      font-size: 14px;\n");
-        html.append("    }\n");
-        html.append("    .stats-grid {\n");
-        html.append("      display: grid;\n");
-        html.append("      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));\n");
-        html.append("      gap: 20px;\n");
-        html.append("      margin: 30px 0;\n");
-        html.append("    }\n");
-        html.append("    .stat-card {\n");
-        html.append("      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n");
-        html.append("      color: white;\n");
-        html.append("      padding: 20px;\n");
-        html.append("      border-radius: 10px;\n");
-        html.append("      text-align: center;\n");
-        html.append("    }\n");
-        html.append("    .stat-card h4 {\n");
-        html.append("      font-size: 14px;\n");
-        html.append("      opacity: 0.9;\n");
-        html.append("      margin-bottom: 10px;\n");
-        html.append("    }\n");
-        html.append("    .stat-card .value {\n");
-        html.append("      font-size: 32px;\n");
-        html.append("      font-weight: bold;\n");
-        html.append("    }\n");
-        html.append("    table {\n");
-        html.append("      width: 100%;\n");
-        html.append("      border-collapse: collapse;\n");
-        html.append("      margin: 30px 0;\n");
-        html.append("      box-shadow: 0 2px 10px rgba(0,0,0,0.05);\n");
-        html.append("    }\n");
-        html.append("    th {\n");
-        html.append("      background: #667eea;\n");
-        html.append("      color: white;\n");
-        html.append("      padding: 15px;\n");
-        html.append("      text-align: left;\n");
-        html.append("      font-weight: 600;\n");
-        html.append("    }\n");
-        html.append("    td {\n");
-        html.append("      padding: 12px 15px;\n");
-        html.append("      border-bottom: 1px solid #e0e0e0;\n");
-        html.append("    }\n");
-        html.append("    tr:hover {\n");
-        html.append("      background: #f5f6fa;\n");
-        html.append("    }\n");
-        html.append("    tr:nth-child(even) {\n");
-        html.append("      background: #fafbfc;\n");
-        html.append("    }\n");
-        html.append("    .stock-warning {\n");
-        html.append("      background: #ffcccc;\n");
-        html.append("      color: #c0392b;\n");
-        html.append("      padding: 5px 10px;\n");
-        html.append("      border-radius: 5px;\n");
-        html.append("      font-weight: 600;\n");
-        html.append("      display: inline-block;\n");
-        html.append("    }\n");
-        html.append("    .stock-critical {\n");
-        html.append("      background: #e74c3c;\n");
-        html.append("      color: white;\n");
-        html.append("      padding: 5px 10px;\n");
-        html.append("      border-radius: 5px;\n");
-        html.append("      font-weight: 600;\n");
-        html.append("      display: inline-block;\n");
-        html.append("    }\n");
-        html.append("    .footer {\n");
-        html.append("      background: #2c3e50;\n");
-        html.append("      color: white;\n");
-        html.append("      padding: 20px 30px;\n");
-        html.append("      border-radius: 0 0 10px 10px;\n");
-        html.append("      margin: 30px -40px -40px -40px;\n");
-        html.append("      text-align: center;\n");
-        html.append("      font-size: 13px;\n");
-        html.append("    }\n");
-        html.append("    .footer p {\n");
-        html.append("      margin: 5px 0;\n");
-        html.append("    }\n");
-        html.append("    @media print {\n");
-        html.append("      body { background: white; padding: 0; }\n");
-        html.append("      .container { box-shadow: none; padding: 30px; }\n");
-        html.append("    }\n");
-        html.append("  </style>\n");
-        html.append("</head>\n");
-        html.append("<body>\n");
-        html.append("  <div class='container'>\n");
+        html.append("<!DOCTYPE html>\n<html lang='en'>\n<head>\n<meta charset='UTF-8'>\n");
+        html.append("<style>\n");
+        html.append("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #2c3e50; line-height: 1.6; }\n");
+        html.append("h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }\n");
+        html.append("h3 { color: #34495e; margin-top: 30px; }\n");
+        html.append("table { border-collapse: collapse; width: 100%; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n");
+        html.append("th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }\n");
+        html.append("th { background: #3498db; color: white; font-weight: 600; }\n");
+        html.append("tr:nth-child(even) { background: #f8f9fa; }\n");
+        html.append("tr:hover { background: #e8f4f8; }\n");
+        html.append(".summary-box { background: #ecf0f1; padding: 20px; margin: 20px 0; border-left: 4px solid #3498db; border-radius: 5px; }\n");
+        html.append("hr { border: none; border-top: 2px solid #bdc3c7; margin: 30px 0; }\n");
+        html.append("</style>\n</head>\n<body>\n");
 
-        // ===== HEADER =====
-        html.append("    <div class='header'>\n");
-        html.append("      <h1>Low Stock Report</h1>\n");
-        html.append("      <p>InfoPharma Ltd | Inventory Management System</p>\n");
-        html.append("    </div>\n");
+        html.append("<hr>\n");
+        html.append("<h1>Low Stock Report</h1>\n");
+        html.append("<p>Generated: ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")))
+                .append(" | By: ").append(generatedBy).append(userRole).append("</p>\n");
 
-        // ===== INFO BOX =====
-        html.append("    <div class='info-box'>\n");
-        html.append("      <p><strong>Generated:</strong> " +
-                LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")) + "</p>\n");
-        html.append("      <p><strong>Generated By:</strong> " + finalGeneratedBy + finalUserRole + "</p>\n");
-        html.append("      <p><strong>Items Requiring Attention:</strong> " + items.size() + " product(s)</p>\n");
-        html.append("    </div>\n");
+        long criticalCount = items.stream().filter(p -> p.getStock() <= p.getLowStockThreshold() * 0.5).count();
+        int totalUnitsToOrder = items.stream().mapToInt(p -> logic.calculateRecommendedOrder(p)).sum();
 
-        // ===== STATISTICS CARDS =====
-        html.append("    <div class='stats-grid'>\n");
-        html.append("      <div class='stat-card'>\n");
-        html.append("        <h4>Low Stock Items</h4>\n");
-        html.append("        <div class='value'>" + items.size() + "</div>\n");
-        html.append("      </div>\n");
-        html.append("      <div class='stat-card'>\n");
-        html.append("        <h4>Critical Stock</h4>\n");
-        html.append("        <div class='value'>" + items.stream().filter(p -> p.getStock() <= p.getLowStockThreshold() * 0.5).count() + "</div>\n");
-        html.append("      </div>\n");
-        html.append("      <div class='stat-card'>\n");
-        html.append("        <h4>Total Units to Order</h4>\n");
-        html.append("        <div class='value'>" + items.stream().mapToInt(p -> logic.calculateRecommendedOrder(p)).sum() + "</div>\n");
-        html.append("      </div>\n");
-        html.append("    </div>\n");
+        html.append("<div class='summary-box'>\n");
+        html.append("<h3>Summary</h3>\n");
+        html.append("<table>\n");
+        html.append("<tr><td>Low Stock Items:</td><td>").append(items.size()).append("</td></tr>\n");
+        html.append("<tr><td>Critical Stock Items (≤50% threshold):</td><td>").append(criticalCount).append("</td></tr>\n");
+        html.append("<tr><td><strong>Total Units to Order:</strong></td><td><strong>").append(totalUnitsToOrder).append("</strong></td></tr>\n");
+        html.append("</table>\n");
+        html.append("</div>\n");
 
-        // ===== TABLE =====
-        html.append("    <h2 style='margin: 30px 0 20px 0; color: #2c3e50;'>Stock Details</h2>\n");
-        html.append("    <table>\n");
-        html.append("      <thead>\n");
-        html.append("        <tr>\n");
-        html.append("          <th>Item ID</th>\n");
-        html.append("          <th>Description</th>\n");
-        html.append("          <th>Current Stock</th>\n");
-        html.append("          <th>Min Threshold</th>\n");
-        html.append("          <th>Status</th>\n");
-        html.append("          <th>Recommended Order</th>\n");
-        html.append("        </tr>\n");
-        html.append("      </thead>\n");
-        html.append("      <tbody>\n");
+        html.append("<h3>Stock Details</h3>\n");
+        html.append("<table>\n");
+        html.append("<tr><th>Item ID</th><th>Description</th><th>Current Stock</th><th>Min Threshold</th><th>Recommended Order</th></tr>\n");
 
         for (Product p : items) {
             int recommendedOrder = logic.calculateRecommendedOrder(p);
-            String statusClass = p.getStock() <= p.getLowStockThreshold() * 0.5 ? "stock-critical" : "stock-warning";
-            String statusText = p.getStock() <= p.getLowStockThreshold() * 0.5 ? "Critical" : "Low";
+            String status = p.getStock() <= p.getLowStockThreshold() * 0.5 ? "CRITICAL" : "LOW";
 
-            html.append("        <tr>\n");
-            html.append("          <td><strong>").append(String.format("%07d", p.getId())).append("</strong></td>\n");
-            html.append("          <td>").append(p.getName().trim()).append("</td>\n");
-            html.append("          <td>").append(p.getStock()).append("</td>\n");
-            html.append("          <td>").append(p.getLowStockThreshold()).append("</td>\n");
-            html.append("          <td><span class='").append(statusClass).append("'>").append(statusText).append("</span></td>\n");
-            html.append("          <td><strong>").append(recommendedOrder).append(" units</strong></td>\n");
-            html.append("        </tr>\n");
+            html.append("<tr>\n");
+            html.append("<td>").append(String.format("%07d", p.getId())).append("</td>\n");
+            html.append("<td>").append(p.getName().trim()).append("</td>\n");
+            html.append("<td>").append(p.getStock()).append("</td>\n");
+            html.append("<td>").append(p.getLowStockThreshold()).append("</td>\n");
+            html.append("<td>").append(recommendedOrder).append(" units (").append(status).append(")</td>\n");
+            html.append("</tr>\n");
         }
+        html.append("</table>\n");
 
-        html.append("      </tbody>\n");
-        html.append("    </table>\n");
-
-        // ===== FOOTER =====
-        html.append("    <div class='footer'>\n");
-        html.append("      <p><strong>InfoPharma Ltd</strong> | 19 High St., Ashford, Kent</p>\n");
-        html.append("      <p>Phone: 0208 778 0124 | Fax: 0208 778 0125</p>\n");
-        html.append("      <p style='margin-top: 15px; opacity: 0.8;'>Confidential - Internal Use Only | Generated by IPOS-CA System</p>\n");
-        html.append("    </div>\n");
-
-        html.append("  </div>\n");
-        html.append("</body>\n");
-        html.append("</html>\n");
+        html.append("<hr>\n");
+        html.append("<p>Generated: ").append(LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm"))).append("</p>\n");
+        html.append("<p>By: ").append(generatedBy).append(" • InfoPharma Ltd.</p>\n");
+        html.append("<p>Confidential - Internal Use Only</p>\n");
+        html.append("</body>\n</html>\n");
 
         try (PrintWriter out = new PrintWriter(reportFile, StandardCharsets.UTF_8)) {
             out.println(html.toString());
+            System.out.println("✅ Report generated: " + reportFile.getAbsolutePath());
 
             if (java.awt.Desktop.isDesktopSupported()) {
                 java.awt.Desktop.getDesktop().browse(reportFile.toURI());
             }
 
-            informationLabel.setText("Low stock report generated: " + items.size() + " items");
-            informationLabel.setStyle("-fx-text-fill: green;");
+            if (informationLabel != null) {
+                informationLabel.setText("Low stock report generated: " + items.size() + " items");
+                informationLabel.setStyle("-fx-text-fill: green;");
+            }
 
         } catch (Exception e) {
-            informationLabel.setText("Error generating report: " + e.getMessage());
-            informationLabel.setStyle("-fx-text-fill: red;");
+            if (informationLabel != null) {
+                informationLabel.setText("Error generating report: " + e.getMessage());
+                informationLabel.setStyle("-fx-text-fill: red;");
+            }
             e.printStackTrace();
         }
     }

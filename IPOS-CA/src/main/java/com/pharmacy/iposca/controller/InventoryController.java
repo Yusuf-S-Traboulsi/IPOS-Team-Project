@@ -20,6 +20,7 @@ public class InventoryController {
     private double currentVatRate = 0.20;
 
     private InventoryController() {
+        loadVatRateFromDatabase();
         loadProductsFromDatabase();
     }
 
@@ -31,10 +32,50 @@ public class InventoryController {
     }
 
     /**
+     * Load VAT rate from merchant_settings table
+     */
+    private void loadVatRateFromDatabase() {
+        String sql = "SELECT vat_rate FROM merchant_settings LIMIT 1";
+        try (Connection conn = DatabaseConnector.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                double dbVatRate = rs.getDouble("vat_rate");
+                if (dbVatRate > 0) {
+                    this.currentVatRate = dbVatRate;
+                }
+            }
+            System.out.println("✅ VAT Rate loaded: " + (currentVatRate * 100) + "%");
+        } catch (SQLException e) {
+            System.err.println("Could not load VAT rate from database, using default 20%");
+        }
+    }
+
+    /**
+     * Save VAT rate to merchant_settings table
+     */
+    public void saveVatRateToDatabase(double rate) {
+        String sql = "UPDATE merchant_settings SET vat_rate = ? WHERE id = 1";
+        try (Connection conn = DatabaseConnector.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setDouble(1, rate);
+            int rows = stmt.executeUpdate();
+
+            if (rows > 0) {
+                this.currentVatRate = rate;
+                System.out.println("✅ VAT Rate saved to database: " + (rate * 100) + "%");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error saving VAT rate: " + e.getMessage());
+        }
+    }
+
+    /**
      * Load all products from MySQL database on startup
      */
     private void loadProductsFromDatabase() {
-        // ✅ Include supplier_item_id in query
         String sql = "SELECT id, name, bulk_cost, markup_rate, price, stock, low_stock_threshold, supplier_item_id FROM products";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -49,12 +90,13 @@ public class InventoryController {
                         rs.getDouble("markup_rate"),
                         rs.getInt("stock"),
                         rs.getInt("low_stock_threshold"),
-                        rs.getString("supplier_item_id") // ✅ Load supplier_item_id
+                        rs.getString("supplier_item_id")
                 );
+                product.setPrice(rs.getDouble("price"));
                 masterInventory.add(product);
             }
 
-            System.out.println("Loaded " + masterInventory.size() + " products from database");
+            System.out.println("✅ Loaded " + masterInventory.size() + " products from database");
         } catch (SQLException e) {
             System.err.println("Error loading products from database: " + e.getMessage());
             e.printStackTrace();
@@ -77,7 +119,6 @@ public class InventoryController {
      * ADD product AND save to database
      */
     public boolean addProduct(int id, String name, double bulkCost, double markup, int stock, int threshold) {
-        // Check if product already exists
         for (Product p : masterInventory) {
             if (p.getId() == id) {
                 System.out.println("Product ID " + id + " already exists");
@@ -86,7 +127,6 @@ public class InventoryController {
         }
 
         String sql = "INSERT INTO products (id, name, bulk_cost, markup_rate, price, stock, low_stock_threshold) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -108,12 +148,10 @@ public class InventoryController {
                 System.out.println("Product added to database: " + name);
                 return true;
             }
-
         } catch (SQLException e) {
             System.err.println("Error adding product: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
@@ -124,7 +162,6 @@ public class InventoryController {
         if (product == null) return false;
 
         String sql = "UPDATE products SET name = ?, bulk_cost = ?, markup_rate = ?, price = ?, stock = ?, low_stock_threshold = ? WHERE id = ?";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -144,12 +181,10 @@ public class InventoryController {
             } else {
                 System.out.println("No rows updated for product ID: " + product.getId());
             }
-
         } catch (SQLException e) {
             System.err.println("Error updating product: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
@@ -158,7 +193,6 @@ public class InventoryController {
      */
     public boolean updateProductField(int productId, String fieldName, Object newValue) {
         String sql = "UPDATE products SET " + fieldName + " = ? WHERE id = ?";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -178,12 +212,11 @@ public class InventoryController {
             if (rowsAffected > 0) {
                 System.out.println("Product field updated: " + fieldName + " = " + newValue);
 
-                // Update local cache
                 for (Product p : masterInventory) {
                     if (p.getId() == productId) {
                         switch (fieldName) {
                             case "name": p.setName((String) newValue); break;
-                            case "bulk_cost": p.setBulkCost((Double) newValue); break;  // ✅ This handles bulk_cost
+                            case "bulk_cost": p.setBulkCost((Double) newValue); break;
                             case "markup_rate": p.setMarkupRate((Double) newValue); break;
                             case "price": p.setPrice((Double) newValue); break;
                             case "stock": p.setStock((Integer) newValue); break;
@@ -192,15 +225,12 @@ public class InventoryController {
                         break;
                     }
                 }
-
                 return true;
             }
-
         } catch (SQLException e) {
             System.err.println("Error updating product field: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
@@ -211,7 +241,6 @@ public class InventoryController {
         if (p == null) return false;
 
         String sql = "DELETE FROM products WHERE id = ?";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -223,21 +252,18 @@ public class InventoryController {
                 System.out.println("Product deleted from database: " + p.getName());
                 return true;
             }
-
         } catch (SQLException e) {
             System.err.println("Error deleting product: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
     /**
-     * ✅ Decrement stock in database AND local cache (For sales)
+     * Decrement stock in database AND local cache (For sales)
      */
     public boolean decrementLocalStock(int itemID, int quantity) {
         String sql = "UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -259,12 +285,10 @@ public class InventoryController {
                 }
                 return true;
             }
-
         } catch (SQLException e) {
-            System.err.println(" Error decrementing stock: " + e.getMessage());
+            System.err.println("Error decrementing stock: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
@@ -273,7 +297,6 @@ public class InventoryController {
      */
     private void logStockChange(int productId, int changeAmount, String reason, int userId) {
         String sql = "INSERT INTO stock_changes (product_id, change_amount, reason, user_id) VALUES (?, ?, ?, ?)";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -281,9 +304,7 @@ public class InventoryController {
             stmt.setInt(2, changeAmount);
             stmt.setString(3, reason);
             stmt.setInt(4, userId);
-
             stmt.executeUpdate();
-
         } catch (SQLException e) {
             System.err.println("Error logging stock change: " + e.getMessage());
         }
@@ -301,6 +322,9 @@ public class InventoryController {
         return Math.max(0, recommended);
     }
 
+    /**
+     * Calculate retail price with VAT (prices stored in DB are VAT-inclusive)
+     */
     public double calculateRetailPrice(Product p) {
         double priceBeforeVat = p.getBulkCost() * (1 + p.getMarkupRate());
         return priceBeforeVat * (1 + currentVatRate);
@@ -313,8 +337,12 @@ public class InventoryController {
         }
     }
 
+    /**
+     * Set VAT rate and save to database
+     */
     public void setVatRate(double rate) {
         this.currentVatRate = rate;
+        saveVatRateToDatabase(rate);
         refreshAllPrices();
     }
 
