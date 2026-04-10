@@ -78,10 +78,18 @@
                            style="-fx-font-size: 13; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
                     <Separator/>
 
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Change Role to:" /> </HBox>
+                    <ComboBox fx:id="roleUpdateDropdown" prefWidth="160" promptText="Select a role: " />
+                    <Button text="Update Role"
+                            onAction="#handleUpdateRole"
+                            style="-fx-background-color: #8e44ad; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
                     <Button text="Toggle Active/Inactive"
                             onAction="#toggleUserStatusLogic"
                             prefHeight="30" maxWidth="Infinity"
                             style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 3; -fx-font-size: 11;"/>
+
 
                     <Button text="Delete User"
                             onAction="#deleteUserLogic"
