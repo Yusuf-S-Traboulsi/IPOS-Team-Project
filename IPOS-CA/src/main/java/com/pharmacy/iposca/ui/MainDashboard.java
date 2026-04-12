@@ -26,7 +26,7 @@ public class MainDashboard {
     }
 
     /**
-     * Load POS/Sales screen - now its actually an EPOS but who am i to complain bobby
+     * Load POS/Sales screen
      */
     @FXML
     private void showPOS() {
@@ -70,15 +70,12 @@ public class MainDashboard {
      */
     @FXML
     private void showDiscountSettings() {loadScreen("com/pharmacy/iposca/discount_settings.fxml"); }
-       /* try {
-            DiscountSettingsView discountView = new DiscountSettingsView();
-            contentArea.getChildren().setAll(discountView);
-        } catch (Exception e) {
-            System.err.println("Could not load Discount Settings");
-            e.printStackTrace();
-        }
-    } */
 
+    /**
+     * Load PU online sale communication screen
+     */
+    @FXML
+    private void showOnlinePortal() {loadScreen("com/pharmacy/iposca/PUView.fxml");}
     /**
      * Load Merchant/Template Settings screen
      */
@@ -92,6 +89,8 @@ public class MainDashboard {
             e.printStackTrace();
         }
     }
+
+
 
     /**
      * Generic method to load FXML screens into the content area

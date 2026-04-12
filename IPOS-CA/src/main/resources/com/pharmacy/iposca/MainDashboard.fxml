@@ -73,6 +73,22 @@
                     </styleClass>
                 </Button>
 
+                <Button fx:id="onlinePortalBtn"
+                        text="Online Portal"
+                        maxWidth="Infinity"
+                        onAction="#showOnlinePortal">
+                    <graphic>
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                        </HBox>
+                    </graphic>
+                    <styleClass>
+                        <String fx:value="button"/>
+                        <String fx:value="sidebar-btn"/>
+                        <String fx:value="btn-onlinePortal"/>
+                    </styleClass>
+                </Button>
+
                 <Button fx:id="customerBtn"
                         text="Customer Management"
                         maxWidth="Infinity"

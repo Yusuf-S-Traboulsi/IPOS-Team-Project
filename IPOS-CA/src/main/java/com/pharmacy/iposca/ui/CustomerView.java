@@ -46,7 +46,7 @@ public class CustomerView {
         // Configure Editable String Columns (SAVE TO DATABASE ON EDIT)
         setupEditableStringColumn(titleCol, "title");
         setupEditableStringColumn(nameCol, "name");
-        setupEditableStringColumn(emailCol, "email");  // ✅ EMAIL IS EDITABLE
+        setupEditableStringColumn(emailCol, "email");
         setupEditableStringColumn(addressCol, "address");
         setupEditableStringColumn(townCol, "town");
         setupEditableStringColumn(postcodeCol, "postcode");

@@ -50,6 +50,7 @@ public class MainDashboardController {
     @FXML private Button adminBtn;
     @FXML private Button reportBtn;
     @FXML private Button logoutBtn;
+    @FXML private Button onlinePortalBtn;
 
     private User currentUser;
 
@@ -95,6 +96,7 @@ public class MainDashboardController {
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
             if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);
+            if (onlinePortalBtn != null) navButtons.getChildren().add(onlinePortalBtn);
 
             navButtons.getChildren().add(createSectionLabel("ACCOUNT HOLDERS"));
             if (customerBtn != null) navButtons.getChildren().add(customerBtn);
@@ -114,6 +116,7 @@ public class MainDashboardController {
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
             if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);
+            if (onlinePortalBtn != null) navButtons.getChildren().add(onlinePortalBtn);
 
             navButtons.getChildren().add(createSectionLabel("ACCOUNT HOLDERS"));
             if (customerBtn != null) navButtons.getChildren().add(customerBtn);
@@ -234,6 +237,13 @@ public class MainDashboardController {
             contentArea.getChildren().setAll(
                     new Label("Access Denied: Supplier ordering is for Manager and Pharmacist roles only.")
             );
+        }
+    }
+
+    @FXML
+    private void showOnlinePortal() {
+        if (currentUser != null && (currentUser.isManager() || currentUser.isPharmacist())) {
+            loadView("/com/pharmacy/iposca/PUView.fxml", "Online Portal");
         }
     }
 

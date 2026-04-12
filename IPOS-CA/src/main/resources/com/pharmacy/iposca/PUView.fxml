@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="12" style="-fx-padding: 15; -fx-background-color: #f4f4f4;"
+      xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.pharmacy.iposca.ui.PUView">
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <VBox>
+            <Label text="PU Communication Management"
+                   style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+            <Label text="Receive and manage online orders from IPOS-PU"
+                   style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
+        </VBox>
+    </HBox>
+
+    <TableView fx:id="onlineSalesTable" VBox.vgrow="ALWAYS" style="-fx-font-size: 11px;">
+        <columns>
+            <TableColumn fx:id="orderIdCol" text="Order ID" prefWidth="80"/>
+            <TableColumn fx:id="customerNameCol" text="Customer Name" prefWidth="140"/>
+            <TableColumn fx:id="deliveryAddressCol" text="Delivery Address" prefWidth="250"/>
+            <TableColumn fx:id="totalAmountCol" text="Total Amount" prefWidth="90"/>
+            <TableColumn fx:id="statusCol" text="Status" prefWidth="140"/>
+            <TableColumn fx:id="orderDateCol" text="Order Date" prefWidth="100"/>
+        </columns>
+    </TableView>
+
+    <TitledPane text="Receive Online sale" expanded="false" style="-fx-font-weight: bold;">
+        <GridPane hgap="10" vgap="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <Label text="Customer Name:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <TextField fx:id="customerNameField" promptText="Customer name"
+                       GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+            <Label text="Delivery Address:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <TextField fx:id="deliveryAddressField" promptText="Delivery address"
+                       GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+            <Label text="Total Amount:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <TextField fx:id="totalAmountField" promptText="Order total"
+                       GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+            <Button text="Receive Sale"
+                    onAction="#handleReceiveOnlineSale"
+                    style="-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold;"
+                    GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+        </GridPane>
+    </TitledPane>
+
+    <FlowPane hgap="10" vgap="10" alignment="CENTER_RIGHT">
+        <Button text="Advance Status"
+                onAction="#handleAdvanceStatus"
+                style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 7 12;"/>
+        <Button text="Mark Delivered"
+                onAction="#handleMarkAsDelivered"
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 11px; -fx-padding: 7 12;"/>
+    </FlowPane>
+
+    <Label fx:id="informationLabel" style="-fx-text-fill: green; -fx-font-size: 11px;"/>
+
+</VBox>
