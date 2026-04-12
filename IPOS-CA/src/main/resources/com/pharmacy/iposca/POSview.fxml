@@ -1,93 +1,161 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 <?import javafx.geometry.Insets?>
 
-<HBox spacing="20" style="-fx-padding: 20; -fx-background-color: #f4f4f4;"
+<VBox spacing="0" style="-fx-background-color: #f4f4f4;"
       xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.pharmacy.iposca.ui.POSView">
 
-    <!-- Left Panel: Product Catalog -->
-    <VBox spacing="10" HBox.hgrow="ALWAYS">
-        <Label text="Product Search" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
-        <TextField fx:id="searchField" promptText="Search by name or ID..."
-                   style="-fx-padding: 8px;"/>
+    <!-- Tab Pane -->
+    <TabPane fx:id="posTabPane" VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE">
 
-        <ListView fx:id="catalogList" VBox.vgrow="ALWAYS"
-                  style="-fx-background-color: white; -fx-border-color: #ddd;"/>
+        <!-- Tab 1: POS Shopping -->
+        <Tab text="🛒 POS Shopping" fx:id="shoppingTab">
+            <HBox spacing="20" style="-fx-padding: 15;">
 
-        <Button text="Add to Cart" maxWidth="Infinity" onAction="#addToCart"
-                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10px;"/>
-    </VBox>
+                <!-- Left: Product Catalog -->
+                <VBox spacing="10" HBox.hgrow="ALWAYS" prefWidth="400">
+                    <Label text="Product Search" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    <TextField fx:id="searchField" promptText="Search by name or ID..."
+                               style="-fx-padding: 8px;"/>
+                    <ListView fx:id="catalogList" VBox.vgrow="ALWAYS"
+                              style="-fx-background-color: white; -fx-border-color: #ddd;"/>
+                    <Button text="Add to Cart" maxWidth="Infinity" onAction="#addToCart"
+                            style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                </VBox>
 
-    <!-- Right Panel: Cart & Payment -->
-    <VBox spacing="10" prefWidth="450"
-          style="-fx-background-color: white; -fx-padding: 15px; -fx-border-color: #ddd; -fx-border-radius: 5px; -fx-background-radius: 5px;">
+                <!-- Right: Cart & Payment -->
+                <VBox spacing="10" prefWidth="450"
+                      style="-fx-background-color: white; -fx-padding: 15px; -fx-border-color: #ddd; -fx-border-radius: 5px;">
 
-        <Label text="Current Sale" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+                    <Label text="Current Cart" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
 
-        <!-- Cart Table -->
-        <TableView fx:id="cartTable" prefHeight="250" editable="true"
-                   style="-fx-background-color: white; -fx-border-color: #ddd;">
-            <columns>
-                <TableColumn fx:id="cartItemCol" text="Item" prefWidth="180" editable="false"/>
-                <TableColumn fx:id="cartQtyCol" text="Qty" prefWidth="70"/>
-                <TableColumn fx:id="cartPriceCol" text="Price" prefWidth="100" editable="false"/>
-            </columns>
-            <columnResizePolicy>
-                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-            </columnResizePolicy>
-        </TableView>
+                    <TableView fx:id="cartTable" prefHeight="200" editable="true"
+                               style="-fx-background-color: white; -fx-border-color: #ddd;">
+                        <columns>
+                            <TableColumn fx:id="cartItemCol" text="Item" prefWidth="180" editable="false"/>
+                            <TableColumn fx:id="cartQtyCol" text="Qty" prefWidth="70"/>
+                            <TableColumn fx:id="cartPriceCol" text="Price" prefWidth="100" editable="false"/>
+                        </columns>
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                    </TableView>
 
-        <Button text="Remove Selected Item" onAction="#removeFromCart" maxWidth="Infinity"
-                style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                    <Button text="Remove Selected" onAction="#removeFromCart" maxWidth="Infinity"
+                            style="-fx-background-color: #e74c3c; -fx-text-fill: white;"/>
 
-        <Separator/>
+                    <Separator/>
 
-        <!-- Customer Identification -->
-        <Label text="Customer Identification" style="-fx-font-weight: bold;"/>
-        <TextField fx:id="customerIdField" promptText="Enter ID (Account Holders)"
-                   style="-fx-padding: 8px;"/>
+                    <!-- Customer Lookup -->
+                    <Label text="Customer ID (Account Holders):" style="-fx-font-weight: bold;"/>
+                    <TextField fx:id="customerIdField" promptText="Enter ID"/>
+                    <Label fx:id="customerStatusLabel" wrapText="true"
+                           style="-fx-text-fill: #e74c3c; -fx-font-size: 12px; -fx-font-weight: bold;"/>
 
-        <!-- Payment Method -->
-        <Label text="Payment Method" style="-fx-font-weight: bold;"/>
-        <HBox spacing="20">
-            <fx:define>
-                <ToggleGroup fx:id="paymentGroup"/>
-            </fx:define>
-            <RadioButton fx:id="cashRadio" text="Cash" toggleGroup="$paymentGroup" selected="true"/>
-            <RadioButton fx:id="cardRadio" text="Card" toggleGroup="$paymentGroup"/>
-        </HBox>
+                    <!-- Payment Method -->
+                    <Label text="Payment Method:" style="-fx-font-weight: bold;"/>
+                    <VBox spacing="8">
+                        <fx:define>
+                            <ToggleGroup fx:id="paymentGroup"/>
+                        </fx:define>
+                        <RadioButton fx:id="cashRadio" text="Cash" toggleGroup="$paymentGroup" selected="true"/>
+                        <RadioButton fx:id="cardRadio" text="Card" toggleGroup="$paymentGroup"/>
+                        <RadioButton fx:id="creditRadio" text="Credit (Account)" toggleGroup="$paymentGroup"/>
+                        <Label text="* Credit adds to customer debt" style="-fx-font-size: 10px; -fx-text-fill: #7f8c8d;"/>
+                    </VBox>
 
-        <!-- Card Details (Hidden by default) -->
-        <VBox fx:id="cardDetailsBox" spacing="8" visible="false"
-              style="-fx-padding: 12px; -fx-background-color: #f1f1f1; -fx-border-radius: 5px;">
-            <TextField fx:id="cardTypeField" promptText="Card Type (Credit or Debit)"/>
-            <HBox spacing="10">
-                <TextField fx:id="cardFirstFour" promptText="First 4" prefWidth="100"/>
-                <TextField fx:id="cardLastFour" promptText="Last 4" prefWidth="100"/>
-                <TextField fx:id="cardExpiry" promptText="MM/YY" prefWidth="100"/>
+                    <!-- Card Details (Hidden by default) -->
+                    <VBox fx:id="cardDetailsBox" spacing="8" visible="false" managed="false"
+                          style="-fx-padding: 10px; -fx-background-color: #f1f1f1; -fx-border-radius: 5px;">
+                        <TextField fx:id="cardTypeField" promptText="Card Type (Credit/Debit)"/>
+                        <HBox spacing="10">
+                            <TextField fx:id="cardFirstFour" promptText="First 4" prefWidth="100"/>
+                            <TextField fx:id="cardLastFour" promptText="Last 4" prefWidth="100"/>
+                            <TextField fx:id="cardExpiry" promptText="MM/YY" prefWidth="80"/>
+                        </HBox>
+                    </VBox>
+
+                    <Region VBox.vgrow="ALWAYS"/>
+
+                    <!-- Total & Complete Button -->
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Text text="TOTAL: " style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+                        <Text fx:id="totalText" text="£0.00"
+                              style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-fill: #c0392b;"/>
+                    </HBox>
+
+                    <Button text="COMPLETE SALE" onAction="#processSale" maxWidth="Infinity"
+                            style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 12px;"/>
+                </VBox>
             </HBox>
-        </VBox>
+        </Tab>
 
-        <Region VBox.vgrow="ALWAYS"/>
+        <!-- Tab 2: Debt Repayment -->
+        <Tab text="💰 Debt Repayment" fx:id="debtTab">
+            <ScrollPane fitToWidth="true" style="-fx-padding: 20;">
+                <VBox spacing="15" prefWidth="500">
 
-        <!-- Total Display -->
-        <HBox alignment="CENTER_LEFT" spacing="10">
-            <Text text="TOTAL: " style="-fx-font-size: 22px; -fx-font-weight: bold;"/>
-            <Text fx:id="totalText" text="£0.00"
-                  style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-fill: #c0392b;"/>
-        </HBox>
+                    <Label text="Customer Debt Payment" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
 
-        <!-- Complete Transaction Button -->
-        <Button text="COMPLETE TRANSACTION" onAction="#processSale" maxWidth="Infinity"
-                style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; -fx-padding: 15px;"/>
+                    <!-- Customer Lookup -->
+                    <TitledPane text="Find Customer" expanded="true">
+                        <VBox spacing="10" style="-fx-padding: 10;">
+                            <TextField fx:id="debtCustomerIdField" promptText="Enter Customer ID"/>
+                            <Button text="Lookup Customer" onAction="#lookupCustomerForDebt"
+                                    style="-fx-background-color: #9b59b6; -fx-text-fill: white;"/>
+                        </VBox>
+                    </TitledPane>
 
-        <!-- Information Label -->
-        <Label fx:id="informationLabel" wrapText="true"
-               style="-fx-text-fill: green; -fx-font-size: 12px;"/>
-    </VBox>
+                    <!-- Debt Payment Form (Hidden until customer found) -->
+                    <VBox fx:id="debtPaymentBox" spacing="10" visible="false" managed="false"
+                          style="-fx-padding: 15; -fx-background-color: #fff3cd; -fx-border-color: #ffc107; -fx-border-radius: 5px;">
 
-</HBox>
+                        <Label fx:id="debtCustomerLabel" text="" style="-fx-font-weight: bold;"/>
+                        <Label fx:id="debtLabel" text="Outstanding Debt: £0.00"
+                               style="-fx-font-size: 16px; -fx-text-fill: #e74c3c;"/>
+                        <Label fx:id="debtStatusWarning" text="" wrapText="true"
+                               style="-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 12px;"/>
+
+                        <Separator/>
+
+                        <Label text="Payment Amount:" style="-fx-font-weight: bold;"/>
+                        <TextField fx:id="debtPaymentAmount" promptText="Enter amount"
+                                   style="-fx-pref-width: 150;"/>
+
+                        <!-- Payment Method for Debt -->
+                        <Label text="Payment Method:" style="-fx-font-weight: bold;"/>
+                        <VBox spacing="8">
+                            <fx:define>
+                                <ToggleGroup fx:id="debtPaymentGroup"/>
+                            </fx:define>
+                            <RadioButton fx:id="debtCashRadio" text="Cash" toggleGroup="$debtPaymentGroup" selected="true"/>
+                            <RadioButton fx:id="debtCardRadio" text="Card" toggleGroup="$debtPaymentGroup"/>
+                        </VBox>
+
+                        <!-- Card Details for Debt Payment -->
+                        <VBox fx:id="debtCardDetailsBox" spacing="8" visible="false" managed="false"
+                              style="-fx-padding: 10px; -fx-background-color: #f1f1f1; -fx-border-radius: 5px;">
+                            <TextField fx:id="debtCardTypeField" promptText="Card Type (Credit/Debit)"/>
+                            <HBox spacing="10">
+                                <TextField fx:id="debtCardFirstFour" promptText="First 4" prefWidth="100"/>
+                                <TextField fx:id="debtCardLastFour" promptText="Last 4" prefWidth="100"/>
+                                <TextField fx:id="debtCardExpiry" promptText="MM/YY" prefWidth="80"/>
+                            </HBox>
+                        </VBox>
+
+                        <Button fx:id="payDebtButton" text="Process Payment"
+                                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px;"
+                                onAction="#processDebtPayment"/>
+
+                        <Label text="* Payment will reduce outstanding debt"
+                               style="-fx-font-size: 11px; -fx-text-fill: #7f8c8d;"/>
+                    </VBox>
+                </VBox>
+            </ScrollPane>
+        </Tab>
+    </TabPane>
+
+</VBox>
