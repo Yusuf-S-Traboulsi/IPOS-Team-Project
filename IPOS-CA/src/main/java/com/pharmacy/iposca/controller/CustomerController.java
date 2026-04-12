@@ -487,4 +487,60 @@ public class CustomerController {
 
         return file;
     }
+    /**
+     * Process debt payment for a customer
+     * @param customer The customer making payment
+     * @param amount The amount being paid
+     * @return true if payment was successful
+     */
+    public boolean processDebtPayment(Customer customer, double amount) {
+        if (customer == null || amount <= 0) {
+            return false;
+        }
+
+        double currentDebt = customer.getCurrentDebt();
+        if (amount > currentDebt) {
+            amount = currentDebt; // Cap payment at outstanding debt
+        }
+
+        // Update customer debt
+        double newDebt = currentDebt - amount;
+        customer.setCurrentDebt(newDebt);
+
+        // ✅ If debt is fully cleared, reset reminders and potentially status
+        if (newDebt <= 0) {
+            customer.setStatus1stReminder("no_need");
+            customer.setStatus2ndReminder("no_need");
+            customer.setDate1stReminder(null);
+            customer.setDate2ndReminder(null);
+
+            // ✅ Auto-reset status if not "In Default"
+            if (!"In Default".equals(customer.getAccountStatus())) {
+                customer.setAccountStatus("Normal");
+            }
+
+            System.out.println("✅ Debt cleared for " + customer.getName() +
+                    " - Status reset to Normal");
+        }
+
+        // ✅ Save to database
+        return updateCustomer(customer);
+    }
+
+    /**
+     * Check if customer can be unsuspended
+     * @param customer The customer to check
+     * @return true if customer can be unsuspended, false if they still have debt
+     */
+    public boolean canUnsuspendCustomer(Customer customer) {
+        if (customer == null) return false;
+
+        if (customer.getCurrentDebt() > 0 && "Suspended".equals(customer.getAccountStatus())) {
+            System.out.println("⚠️ Cannot unsuspend " + customer.getName() +
+                    " - Outstanding debt: £" + customer.getCurrentDebt());
+            return false;
+        }
+
+        return true;
+    }
 }

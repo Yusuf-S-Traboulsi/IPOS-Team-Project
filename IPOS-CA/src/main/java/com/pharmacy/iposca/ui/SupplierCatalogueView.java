@@ -14,7 +14,7 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.converter.IntegerStringConverter;
-
+import javafx.fxml.FXML;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +23,7 @@ import java.util.List;
 
 /**
  * Supplier Catalogue View - IPOS-SA Ordering System
+ * This is the FXML controller class for SupplierView.fxml
  */
 public class SupplierCatalogueView extends VBox {
 
@@ -154,7 +155,6 @@ public class SupplierCatalogueView extends VBox {
         infoLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
 
         panel.getChildren().addAll(titleLabel, filterBox, catalogueTable, addToOrderButton, infoLabel);
-
         return panel;
     }
 
@@ -168,7 +168,6 @@ public class SupplierCatalogueView extends VBox {
         Label titleLabel = new Label("Current Order");
         titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
 
-        // Cart Table with EDITABLE quantity
         cartTable = new TableView<>();
         cartTable.setItems(orderCart);
         cartTable.setEditable(true);
@@ -211,7 +210,6 @@ public class SupplierCatalogueView extends VBox {
         // Total and Submit
         HBox totalBox = new HBox(20);
         totalBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-
         totalLabel = new Label("Grand Total: 0.00");
         totalLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         totalLabel.setStyle("-fx-text-fill: #2c3e50;");
@@ -224,15 +222,11 @@ public class SupplierCatalogueView extends VBox {
         Button clearButton = new Button("Clear Order");
         clearButton.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         clearButton.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 12 30;");
-        clearButton.setOnAction(e -> {
-            orderCart.clear();
-            updateCartDisplay();
-        });
+        clearButton.setOnAction(e -> clearOrder());
 
         totalBox.getChildren().addAll(totalLabel, submitButton, clearButton);
 
         panel.getChildren().addAll(titleLabel, cartTable, removeFromOrderButton, totalBox);
-
         return panel;
     }
 
@@ -315,12 +309,8 @@ public class SupplierCatalogueView extends VBox {
 
         Button refreshButton = new Button("Refresh Orders");
         refreshButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white;");
-        refreshButton.setOnAction(e -> {
-            controller.refreshOrders();
-            ordersTable.setItems(controller.getOrders());
-        });
+        refreshButton.setOnAction(e -> refreshOrders());
 
-        // Order Form Button (Appendix 9.2)
         Button orderFormButton = new Button("Order Form");
         orderFormButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white;");
         orderFormButton.setOnAction(e -> {
@@ -333,17 +323,14 @@ public class SupplierCatalogueView extends VBox {
             }
         });
 
-        // Orders Summary Report Button (Appendix 9.4)
         Button summaryReportButton = new Button("Orders Summary");
         summaryReportButton.setStyle("-fx-background-color: #9b59b6; -fx-text-fill: white;");
         summaryReportButton.setOnAction(e -> generateOrdersSummaryReport());
 
-        // Detailed Order Report Button (Appendix 9.5)
         Button detailedReportButton = new Button("Detailed Report");
         detailedReportButton.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white;");
         detailedReportButton.setOnAction(e -> generateDetailedOrderReport());
 
-        // Mark as Paid Button
         Button markAsPaidButton = new Button("Mark as Paid");
         markAsPaidButton.setStyle("-fx-background-color: #16a085; -fx-text-fill: white;");
         markAsPaidButton.setOnAction(e -> markSelectedAsPaid());
@@ -354,7 +341,6 @@ public class SupplierCatalogueView extends VBox {
         ordersInfoLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
 
         panel.getChildren().addAll(titleLabel, ordersTable, reportButtonBox, ordersInfoLabel);
-
         return panel;
     }
 
@@ -368,17 +354,13 @@ public class SupplierCatalogueView extends VBox {
         Label titleLabel = new Label("Outstanding Balance Query");
         titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
 
-        // Balance Display
         VBox balanceBox = new VBox(10);
         balanceBox.setStyle("-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10; -fx-border-color: #e74c3c; -fx-border-width: 2;");
-
         balanceLabel = new Label("Total Outstanding: 0.00");
         balanceLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
         balanceLabel.setStyle("-fx-text-fill: #e74c3c;");
-
         Label infoText = new Label("This represents unpaid invoices from IPOS-SA");
         infoText.setStyle("-fx-text-fill: #7f8c8d;");
-
         balanceBox.getChildren().addAll(balanceLabel, infoText);
 
         // Invoices Table
@@ -443,13 +425,12 @@ public class SupplierCatalogueView extends VBox {
         panel.getChildren().addAll(titleLabel, balanceBox, invoicesLabel, invoicesTable, buttonBox, balanceInfoLabel);
 
         updateBalanceDisplay();
-
         return panel;
     }
 
-    //ACTION METHODS
 
-    private void addToOrder() {
+    @FXML
+    public void addToOrder() {
         SupplierCatalogueItem selected = catalogueTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showAlert("Please select an item from the catalogue first.");
@@ -481,46 +462,29 @@ public class SupplierCatalogueView extends VBox {
         infoLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
     }
 
-    private void removeFromOrder() {
+    @FXML
+    public void removeFromOrder() {
         OrderCartItem selected = cartTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showAlert("Please select an item from the order cart first.");
             return;
         }
-
         orderCart.remove(selected);
         updateCartDisplay();
         infoLabel.setText("Removed from order: " + selected.description.get());
         infoLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
     }
 
-    private void updateCartDisplay() {
-        if (cartTable != null) {
-            cartTable.refresh();
-        }
-        double total = orderCart.stream().mapToDouble(item -> item.total.get()).sum();
-        if (totalLabel != null) {
-            totalLabel.setText("Grand Total: " + String.format("%.2f", total));
-        }
+    @FXML
+    public void clearOrder() {
+        orderCart.clear();
+        updateCartDisplay();
+        infoLabel.setText("Order cleared");
+        infoLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
     }
 
-    private void filterCatalogue() {
-        String searchText = searchField.getText().toLowerCase();
-        String category = categoryFilter.getValue();
-
-        ObservableList<SupplierCatalogueItem> filtered = FXCollections.observableArrayList();
-        for (SupplierCatalogueItem item : controller.getCatalogue()) {
-            boolean matchesSearch = item.getItemId().toLowerCase().contains(searchText) ||
-                    item.getDescription().toLowerCase().contains(searchText);
-            boolean matchesCategory = "All".equals(category) || item.getCategory().equals(category);
-            if (matchesSearch && matchesCategory) {
-                filtered.add(item);
-            }
-        }
-        catalogueTable.setItems(filtered);
-    }
-
-    private void submitOrder() {
+    @FXML
+    public void submitOrder() {
         if (orderCart.isEmpty()) {
             showAlert("Order cart is empty!");
             return;
@@ -550,7 +514,39 @@ public class SupplierCatalogueView extends VBox {
         }
     }
 
-    private void markSelectedAsPaid() {
+    @FXML
+    public void refreshOrders() {
+        controller.refreshOrders();
+        ordersTable.setItems(controller.getOrders());
+        invoicesTable.setItems(controller.getInvoices());
+        updateBalanceDisplay();
+        ordersInfoLabel.setText("Orders refreshed");
+        ordersInfoLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
+    }
+
+    @FXML
+    public void generateOrdersSummaryReport() {
+        LocalDate startDate = LocalDate.now().withDayOfMonth(1);
+        LocalDate endDate = LocalDate.now();
+        File reportFile = controller.generateOrdersSummaryReport(startDate, endDate);
+        showAlert("Orders Summary Report generated:\n" + reportFile.getName());
+    }
+
+    @FXML
+    public void generateDetailedOrderReport() {
+        SupplierOrder selectedOrder = ordersTable.getSelectionModel().getSelectedItem();
+        if (selectedOrder == null) {
+            showAlert("Please select an order to view details");
+            return;
+        }
+        LocalDate startDate = LocalDate.now().withDayOfMonth(1);
+        LocalDate endDate = LocalDate.now();
+        File reportFile = controller.generateDetailedOrderReport(startDate, endDate);
+        showAlert("Detailed Order Report generated:\n" + reportFile.getName());
+    }
+
+    @FXML
+    public void markSelectedAsPaid() {
         SupplierOrder selected = ordersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showAlert("Please select an order first.");
@@ -619,31 +615,37 @@ public class SupplierCatalogueView extends VBox {
         });
     }
 
+    private void updateCartDisplay() {
+        if (cartTable != null) {
+            cartTable.refresh();
+        }
+        double total = orderCart.stream().mapToDouble(item -> item.total.get()).sum();
+        if (totalLabel != null) {
+            totalLabel.setText("Grand Total: " + String.format("%.2f", total));
+        }
+    }
+
+    private void filterCatalogue() {
+        String searchText = searchField.getText().toLowerCase();
+        String category = categoryFilter.getValue();
+
+        ObservableList<SupplierCatalogueItem> filtered = FXCollections.observableArrayList();
+        for (SupplierCatalogueItem item : controller.getCatalogue()) {
+            boolean matchesSearch = item.getItemId().toLowerCase().contains(searchText) ||
+                    item.getDescription().toLowerCase().contains(searchText);
+            boolean matchesCategory = "All".equals(category) || item.getCategory().equals(category);
+            if (matchesSearch && matchesCategory) {
+                filtered.add(item);
+            }
+        }
+        catalogueTable.setItems(filtered);
+    }
+
     private void updateBalanceDisplay() {
         double outstandingBalance = controller.getOutstandingBalance();
         if (balanceLabel != null) {
             balanceLabel.setText("Total Outstanding: " + String.format("%.2f", outstandingBalance));
         }
-    }
-
-    private void generateOrdersSummaryReport() {
-        LocalDate startDate = LocalDate.now().withDayOfMonth(1);
-        LocalDate endDate = LocalDate.now();
-        File reportFile = controller.generateOrdersSummaryReport(startDate, endDate);
-        showAlert("Orders Summary Report generated:\n" + reportFile.getName());
-    }
-
-    private void generateDetailedOrderReport() {
-        SupplierOrder selectedOrder = ordersTable.getSelectionModel().getSelectedItem();
-        if (selectedOrder == null) {
-            showAlert("Please select an order to view details");
-            return;
-        }
-
-        LocalDate startDate = LocalDate.now().withDayOfMonth(1);
-        LocalDate endDate = LocalDate.now();
-        File reportFile = controller.generateDetailedOrderReport(startDate, endDate);
-        showAlert("Detailed Order Report generated:\n" + reportFile.getName());
     }
 
     private void showAlert(String message) {
@@ -653,8 +655,6 @@ public class SupplierCatalogueView extends VBox {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
-    // ===== INNER CLASS: OrderCartItem =====
 
     public static class OrderCartItem {
         public final StringProperty itemId;

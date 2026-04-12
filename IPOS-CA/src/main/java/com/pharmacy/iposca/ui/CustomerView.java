@@ -16,6 +16,7 @@ import java.time.format.DateTimeFormatter;
 /**
  * Customer View - Full Database Integration
  * All TableView edits save immediately to MySQL database
+ * Includes role-based protection for unsuspend functionality
  */
 public class CustomerView {
 
@@ -27,8 +28,12 @@ public class CustomerView {
     @FXML private ComboBox<String> titleCombo;
     @FXML private TextField nameInput, emailInput, addressInput, townInput, postcodeInput, limitInput;
     @FXML private Label informationLabel;
+    @FXML private Button unsuspendButton;  // ✅ Add fx:id in FXML
 
     private CustomerController logic = CustomerController.getInstance();
+
+    // ✅ Track current user role for permission checks
+    private String currentUserRole = "MANAGER";  // Default for testing
 
     @FXML
     public void initialize() {
@@ -46,7 +51,7 @@ public class CustomerView {
         // Configure Editable String Columns (SAVE TO DATABASE ON EDIT)
         setupEditableStringColumn(titleCol, "title");
         setupEditableStringColumn(nameCol, "name");
-        setupEditableStringColumn(emailCol, "email");  // ✅ EMAIL IS EDITABLE
+        setupEditableStringColumn(emailCol, "email");
         setupEditableStringColumn(addressCol, "address");
         setupEditableStringColumn(townCol, "town");
         setupEditableStringColumn(postcodeCol, "postcode");
@@ -72,6 +77,24 @@ public class CustomerView {
             });
         });
         customerTable.setItems(filteredData);
+
+        // ✅ Setup role-based controls
+        setupRoleBasedControls();
+    }
+
+    /**
+     * Setup role-based visibility for sensitive controls
+     */
+    private void setupRoleBasedControls() {
+        // ✅ Only Manager can see/use unsuspend button
+        if (unsuspendButton != null) {
+            boolean isManager = "MANAGER".equals(currentUserRole);
+            unsuspendButton.setVisible(isManager);
+            unsuspendButton.setManaged(isManager);
+            if (!isManager) {
+                System.out.println("Unsuspend button hidden for role: " + currentUserRole);
+            }
+        }
     }
 
     /**
@@ -96,7 +119,6 @@ public class CustomerView {
 
             // ✅ SAVE TO DATABASE
             logic.updateCustomerField(c, property, newValue);
-
             customerTable.refresh();
         });
     }
@@ -106,7 +128,7 @@ public class CustomerView {
         try {
             String title = titleCombo.getValue();
             String name = nameInput.getText();
-            String email = emailInput.getText();  // ✅ GET EMAIL - huh who knew u could use emojis
+            String email = emailInput.getText();
             String address = addressInput.getText();
             String town = townInput.getText();
             String postcode = postcodeInput.getText();
@@ -153,6 +175,40 @@ public class CustomerView {
                 informationLabel.setText("Cannot delete account with active debt.");
                 informationLabel.setStyle("-fx-text-fill: red;");
             }
+        } else {
+            informationLabel.setText("Please select a customer first.");
+            informationLabel.setStyle("-fx-text-fill: red;");
+        }
+    }
+
+    @FXML
+    private void handleUnsuspendCustomer() {
+        Customer selected = customerTable.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            // ✅ ROLE CHECK: Only Manager can unsuspend
+            if (!"MANAGER".equals(currentUserRole)) {
+                informationLabel.setText("Only Manager can unsuspend accounts.");
+                informationLabel.setStyle("-fx-text-fill: red;");
+                return;
+            }
+
+            // ✅ PROTECTIVE MEASURE: Check if customer has outstanding debt
+            if (!logic.canUnsuspendCustomer(selected)) {
+                informationLabel.setText("Cannot unsuspend: Customer has outstanding debt of £" +
+                        String.format("%.2f", selected.getCurrentDebt()) +
+                        ". Please process payment first.");
+                informationLabel.setStyle("-fx-text-fill: red;");
+                showAlert("Account cannot be unsuspended while debt is outstanding.\n" +
+                        "Use POS debt payment feature or process payment first.");
+                return;
+            }
+
+            // ✅ Proceed with unsuspend
+            selected.setAccountStatus("Normal");
+            logic.updateCustomer(selected);
+            customerTable.refresh();
+            informationLabel.setText("Account unsuspended: " + selected.getName());
+            informationLabel.setStyle("-fx-text-fill: green;");
         } else {
             informationLabel.setText("Please select a customer first.");
             informationLabel.setStyle("-fx-text-fill: red;");
@@ -301,5 +357,19 @@ public class CustomerView {
         postcodeInput.clear();
         limitInput.clear();
         titleCombo.setValue(null);
+    }
+
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Customer Management");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    // ✅ Setter for role (call from LoginView after authentication)
+    public void setCurrentUserRole(String role) {
+        this.currentUserRole = role;
+        setupRoleBasedControls();
     }
 }
