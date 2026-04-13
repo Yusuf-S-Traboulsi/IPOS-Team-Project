@@ -8,7 +8,6 @@ import java.time.LocalDate;
  * Includes discount plan support (Fixed & Flexible plans per briefing page 38).
  */
 public class Customer {
-
     private final IntegerProperty id = new SimpleIntegerProperty();
     private final StringProperty title = new SimpleStringProperty();
     private final StringProperty name = new SimpleStringProperty();
@@ -25,7 +24,6 @@ public class Customer {
     private final ObjectProperty<LocalDate> date2ndReminder = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDate> oldestDebtDate = new SimpleObjectProperty<>();
 
-    // Discount Plan Fields (Briefing Page 38)
     private final StringProperty discountPlanType = new SimpleStringProperty("NONE");
     private final DoubleProperty discountRate = new SimpleDoubleProperty(0.0);
     private final DoubleProperty monthlyPurchaseTotal = new SimpleDoubleProperty(0.0);
@@ -110,7 +108,6 @@ public class Customer {
     public void setOldestDebtDate(LocalDate date) { this.oldestDebtDate.set(date); }
     public ObjectProperty<LocalDate> oldestDebtDateProperty() { return oldestDebtDate; }
 
-    // ===== DISCOUNT GETTERS/SETTERS =====
     public String getDiscountPlanType() { return discountPlanType.get(); }
     public void setDiscountPlanType(String type) { this.discountPlanType.set(type); }
     public StringProperty discountPlanTypeProperty() { return discountPlanType; }
