@@ -1,7 +1,10 @@
 package com.pharmacy.iposca.ui;
 
 import com.pharmacy.iposca.controller.CustomerController;
+import com.pharmacy.iposca.controller.CustomerController.PaymentRecord;
 import com.pharmacy.iposca.model.Customer;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -14,9 +17,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Customer View - Full Database Integration
- * All TableView edits save immediately to MySQL database
- * Includes role-based protection for unsuspend functionality
+ * Customer View Controller - FXML-based MVC
  */
 public class CustomerView {
 
@@ -25,30 +26,68 @@ public class CustomerView {
     @FXML private TableColumn<Customer, Integer> idCol;
     @FXML private TableColumn<Customer, String> titleCol, nameCol, emailCol, addressCol, townCol, postcodeCol, statusCol, rem1Col, rem2Col;
     @FXML private TableColumn<Customer, Double> limitCol, debtCol;
+
+    // Registration Controls
     @FXML private ComboBox<String> titleCombo;
     @FXML private TextField nameInput, emailInput, addressInput, townInput, postcodeInput, limitInput;
+
+    // Feedback & Actions
     @FXML private Label informationLabel;
-    @FXML private Button unsuspendButton;  // ✅ Add fx:id in FXML
+    @FXML private Button unsuspendButton;
 
-    private CustomerController logic = CustomerController.getInstance();
+    // Payment History Controls
+    @FXML private Label selectedCustomerLabel;
+    @FXML private TableView<PaymentRecord> paymentHistoryTable;
 
-    // ✅ Track current user role for permission checks
-    private String currentUserRole = "MANAGER";  // Default for testing
+    // Payment History Columns (Defined in FXML)
+    @FXML private TableColumn<PaymentRecord, LocalDate> payDateCol;
+    @FXML private TableColumn<PaymentRecord, Double> payAmountCol;
+    @FXML private TableColumn<PaymentRecord, String> payTypeCol;
+    @FXML private TableColumn<PaymentRecord, String> payDetailsCol;
+    @FXML private TableColumn<PaymentRecord, String> payRefCol;
+
+    private final CustomerController logic = CustomerController.getInstance();
+    private String currentUserRole = "MANAGER";
 
     @FXML
     public void initialize() {
-        customerTable.setEditable(true);
-        titleCombo.getItems().addAll("Mr.", "Ms.", "Mrs.", "Dr.");
+        if (titleCombo != null) {
+            titleCombo.getItems().addAll("Mr.", "Ms.", "Mrs.", "Dr.");
+        }
 
-        // --- Column Setup ---
-        idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        // Setup Customer Table Columns
+        if (idCol != null) idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
+        if (titleCol != null) titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
+        if (nameCol != null) nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        if (emailCol != null) emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
+        if (addressCol != null) addressCol.setCellValueFactory(new PropertyValueFactory<>("address"));
+        if (townCol != null) townCol.setCellValueFactory(new PropertyValueFactory<>("town"));
+        if (postcodeCol != null) postcodeCol.setCellValueFactory(new PropertyValueFactory<>("postcode"));
+        if (limitCol != null) limitCol.setCellValueFactory(new PropertyValueFactory<>("creditLimit"));
+        if (debtCol != null) debtCol.setCellValueFactory(new PropertyValueFactory<>("currentDebt"));
+        if (statusCol != null) statusCol.setCellValueFactory(new PropertyValueFactory<>("accountStatus"));
+        if (rem1Col != null) rem1Col.setCellValueFactory(new PropertyValueFactory<>("status1stReminder"));
+        if (rem2Col != null) rem2Col.setCellValueFactory(new PropertyValueFactory<>("status2ndReminder"));
 
-        statusCol.setCellValueFactory(new PropertyValueFactory<>("accountStatus"));
-        debtCol.setCellValueFactory(new PropertyValueFactory<>("currentDebt"));
-        rem1Col.setCellValueFactory(new PropertyValueFactory<>("status1stReminder"));
-        rem2Col.setCellValueFactory(new PropertyValueFactory<>("status2ndReminder"));
+        if (customerTable != null) {
+            customerTable.setEditable(true);
+            setupEditableColumns();
+            customerTable.setItems(logic.getCustomerData());
+            setupSearchFilter();
 
-        // Configure Editable String Columns (SAVE TO DATABASE ON EDIT)
+            // Link selection to payment history
+            customerTable.getSelectionModel().selectedItemProperty()
+                    .addListener((obs, oldVal, newVal) -> {
+                        if (newVal != null) loadPaymentHistory(newVal);
+                    });
+        }
+
+        setupPaymentHistoryTable();
+        setupRoleBasedControls();
+        System.out.println("CustomerView initialized with " + logic.getCustomerData().size() + " customers");
+    }
+
+    private void setupEditableColumns() {
         setupEditableStringColumn(titleCol, "title");
         setupEditableStringColumn(nameCol, "name");
         setupEditableStringColumn(emailCol, "email");
@@ -56,58 +95,23 @@ public class CustomerView {
         setupEditableStringColumn(townCol, "town");
         setupEditableStringColumn(postcodeCol, "postcode");
 
-        // Credit Limit Column (editable numeric - SAVE TO DATABASE ON EDIT)
-        limitCol.setCellValueFactory(new PropertyValueFactory<>("creditLimit"));
-        limitCol.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
-        limitCol.setOnEditCommit(e -> {
-            Customer c = e.getRowValue();
-            c.setCreditLimit(e.getNewValue());
-            logic.updateCustomerField(c, "credit_limit", e.getNewValue());
-        });
-
-        // --- Search Filter ---
-        FilteredList<Customer> filteredData = new FilteredList<>(logic.getCustomerData(), p -> true);
-        customerSearch.textProperty().addListener((obs, oldVal, newVal) -> {
-            filteredData.setPredicate(c -> {
-                if (newVal == null || newVal.isEmpty()) return true;
-                String lower = newVal.toLowerCase();
-                return c.getName().toLowerCase().contains(lower) ||
-                        c.getEmail().toLowerCase().contains(lower) ||
-                        String.valueOf(c.getId()).contains(newVal);
+        if (limitCol != null) {
+            limitCol.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
+            limitCol.setOnEditCommit(e -> {
+                Customer c = e.getRowValue();
+                c.setCreditLimit(e.getNewValue());
+                logic.updateCustomerField(c, "credit_limit", e.getNewValue());
+                customerTable.refresh();
             });
-        });
-        customerTable.setItems(filteredData);
-
-        // ✅ Setup role-based controls
-        setupRoleBasedControls();
-    }
-
-    /**
-     * Setup role-based visibility for sensitive controls
-     */
-    private void setupRoleBasedControls() {
-        // ✅ Only Manager can see/use unsuspend button
-        if (unsuspendButton != null) {
-            boolean isManager = "MANAGER".equals(currentUserRole);
-            unsuspendButton.setVisible(isManager);
-            unsuspendButton.setManaged(isManager);
-            if (!isManager) {
-                System.out.println("Unsuspend button hidden for role: " + currentUserRole);
-            }
         }
     }
 
-    /**
-     * Setup editable string column with database save on edit commit
-     */
     private void setupEditableStringColumn(TableColumn<Customer, String> col, String property) {
-        col.setCellValueFactory(new PropertyValueFactory<>(property));
+        if (col == null) return;
         col.setCellFactory(TextFieldTableCell.forTableColumn());
         col.setOnEditCommit(e -> {
             Customer c = e.getRowValue();
             String newValue = e.getNewValue();
-
-            // Update local object
             switch (property) {
                 case "title": c.setTitle(newValue); break;
                 case "name": c.setName(newValue); break;
@@ -116,102 +120,147 @@ public class CustomerView {
                 case "town": c.setTown(newValue); break;
                 case "postcode": c.setPostcode(newValue); break;
             }
-
-            // ✅ SAVE TO DATABASE
             logic.updateCustomerField(c, property, newValue);
             customerTable.refresh();
         });
     }
 
+    private void setupSearchFilter() {
+        if (customerTable == null || customerSearch == null) return;
+        FilteredList<Customer> filtered = new FilteredList<>(logic.getCustomerData(), p -> true);
+        customerSearch.textProperty().addListener((obs, old, newVal) -> {
+            filtered.setPredicate(c -> {
+                if (newVal == null || newVal.isEmpty()) return true;
+                String lower = newVal.toLowerCase();
+                return c.getName().toLowerCase().contains(lower) ||
+                        c.getEmail().toLowerCase().contains(lower) ||
+                        String.valueOf(c.getId()).contains(newVal);
+            });
+        });
+        customerTable.setItems(filtered);
+    }
+
+    private void setupPaymentHistoryTable() {
+        if (paymentHistoryTable == null) return;
+        if (payDateCol != null) payDateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
+        if (payAmountCol != null) payAmountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
+        if (payTypeCol != null) payTypeCol.setCellValueFactory(new PropertyValueFactory<>("paymentType"));
+        if (payDetailsCol != null) payDetailsCol.setCellValueFactory(new PropertyValueFactory<>("paymentDetails"));
+        if (payRefCol != null) payRefCol.setCellValueFactory(new PropertyValueFactory<>("reference"));
+    }
+
+    private void setupRoleBasedControls() {
+        if (unsuspendButton != null && !"MANAGER".equals(currentUserRole)) {
+            unsuspendButton.setVisible(false);
+            unsuspendButton.setManaged(false);
+        }
+    }
+
+    private void loadPaymentHistory(Customer customer) {
+        if (selectedCustomerLabel != null) {
+            selectedCustomerLabel.setText("Payment History: " + customer.getTitle() + " " + customer.getName());
+        }
+        if (paymentHistoryTable != null) {
+            paymentHistoryTable.setItems(logic.getCustomerPaymentHistory(customer.getId()));
+        }
+    }
+
+
     @FXML
     private void handleAddCustomer() {
         try {
-            String title = titleCombo.getValue();
-            String name = nameInput.getText();
-            String email = emailInput.getText();
-            String address = addressInput.getText();
-            String town = townInput.getText();
-            String postcode = postcodeInput.getText();
-            double limit = Double.parseDouble(limitInput.getText());
+            String title = titleCombo != null ? titleCombo.getValue() : null;
+            String name = nameInput != null ? nameInput.getText() : "";
+            String email = emailInput != null ? emailInput.getText() : "";
+            String address = addressInput != null ? addressInput.getText() : "";
+            String town = townInput != null ? townInput.getText() : "";
+            String postcode = postcodeInput != null ? postcodeInput.getText() : "";
+            double limit = limitInput != null ? Double.parseDouble(limitInput.getText()) : 0;
 
             if (title == null || name.isEmpty() || address.isEmpty() || town.isEmpty() || postcode.isEmpty()) {
-                informationLabel.setText("Please fill in all fields.");
-                informationLabel.setStyle("-fx-text-fill: red;");
+                showInfo("Please fill in all required fields.", true);
                 return;
             }
 
-            // ✅ ADD TO DATABASE
-            boolean success = logic.addCustomer(title, name, email, address, town, postcode, limit);
-
-            if (success) {
+            if (logic.addCustomer(title, name, email, address, town, postcode, limit)) {
                 clearInputs();
                 customerTable.refresh();
-                informationLabel.setText("Customer added successfully.");
-                informationLabel.setStyle("-fx-text-fill: green;");
+                showInfo("Customer added successfully.", false);
             } else {
-                informationLabel.setText("Failed to add customer. Check database connection.");
-                informationLabel.setStyle("-fx-text-fill: red;");
+                showInfo("Failed to add customer.", true);
             }
-
         } catch (NumberFormatException e) {
-            informationLabel.setText("Invalid credit limit format.");
-            informationLabel.setStyle("-fx-text-fill: red;");
+            showInfo("Invalid credit limit format.", true);
         } catch (Exception e) {
-            informationLabel.setText("Error adding customer: " + e.getMessage());
-            informationLabel.setStyle("-fx-text-fill: red;");
+            showInfo("Error: " + e.getMessage(), true);
         }
     }
 
     @FXML
     private void handleDeleteCustomer() {
-        Customer selected = customerTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            // ✅ DELETE FROM DATABASE
-            if (logic.deleteCustomer(selected)) {
-                customerTable.refresh();
-                informationLabel.setText("Customer deleted.");
-                informationLabel.setStyle("-fx-text-fill: green;");
-            } else {
-                informationLabel.setText("Cannot delete account with active debt.");
-                informationLabel.setStyle("-fx-text-fill: red;");
-            }
+        Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
+        if (selected == null) {
+            showInfo("Please select a customer first.", true);
+            return;
+        }
+        if (logic.deleteCustomer(selected)) {
+            customerTable.refresh();
+            showInfo("Customer deleted.", false);
         } else {
-            informationLabel.setText("Please select a customer first.");
-            informationLabel.setStyle("-fx-text-fill: red;");
+            showInfo("Cannot delete account with active debt.", true);
         }
     }
 
     @FXML
     private void handleUnsuspendCustomer() {
-        Customer selected = customerTable.getSelectionModel().getSelectedItem();
+        Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
+        if (selected == null) {
+            showInfo("Please select a customer first.", true);
+            return;
+        }
+        if (!"MANAGER".equals(currentUserRole)) {
+            showInfo("Only Manager can unsuspend accounts.", true);
+            return;
+        }
+
+        if (selected.getCurrentDebt() > 0.001) {
+            showInfo("Cannot Unsuspend: Customer has outstanding debt of £" +
+                    String.format("%.2f", selected.getCurrentDebt()) + ".\nThey must pay in full first.", true);
+            return;
+        }
+
+        selected.setAccountStatus("Normal");
+        logic.updateCustomer(selected);
+        customerTable.refresh();
+        showInfo("Account unsuspended: " + selected.getName(), false);
+    }
+
+    @FXML
+    private void handleViewPurchaseHistory() {
+        Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
+        if (selected == null) {
+            showInfo("Please select a customer first.", true);
+            return;
+        }
+        File report = logic.generatePurchaseHistoryReport(selected);
+        if (report != null) {
+            try {
+                if (java.awt.Desktop.isDesktopSupported()) {
+                    java.awt.Desktop.getDesktop().browse(report.toURI());
+                }
+                showInfo("Purchase history report generated.", false);
+            } catch (Exception e) {
+                showInfo("Error opening report: " + e.getMessage(), true);
+            }
+        }
+    }
+
+    @FXML
+    private void handleRefreshPaymentHistory() {
+        Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
         if (selected != null) {
-            // ✅ ROLE CHECK: Only Manager can unsuspend
-            if (!"MANAGER".equals(currentUserRole)) {
-                informationLabel.setText("Only Manager can unsuspend accounts.");
-                informationLabel.setStyle("-fx-text-fill: red;");
-                return;
-            }
-
-            // ✅ PROTECTIVE MEASURE: Check if customer has outstanding debt
-            if (!logic.canUnsuspendCustomer(selected)) {
-                informationLabel.setText("Cannot unsuspend: Customer has outstanding debt of £" +
-                        String.format("%.2f", selected.getCurrentDebt()) +
-                        ". Please process payment first.");
-                informationLabel.setStyle("-fx-text-fill: red;");
-                showAlert("Account cannot be unsuspended while debt is outstanding.\n" +
-                        "Use POS debt payment feature or process payment first.");
-                return;
-            }
-
-            // ✅ Proceed with unsuspend
-            selected.setAccountStatus("Normal");
-            logic.updateCustomer(selected);
-            customerTable.refresh();
-            informationLabel.setText("Account unsuspended: " + selected.getName());
-            informationLabel.setStyle("-fx-text-fill: green;");
-        } else {
-            informationLabel.setText("Please select a customer first.");
-            informationLabel.setStyle("-fx-text-fill: red;");
+            loadPaymentHistory(selected);
+            showInfo("Payment history refreshed", false);
         }
     }
 
@@ -219,97 +268,47 @@ public class CustomerView {
     private void triggerSystemAutoCheck() {
         logic.evaluateAccountStatuses(LocalDate.now().plusDays(45));
         customerTable.refresh();
-        informationLabel.setText("Compliance check complete.");
-        informationLabel.setStyle("-fx-text-fill: green;");
+        showInfo("Compliance check complete.", false);
     }
 
     @FXML
     private void generateMonthlyStatements() {
         int day = LocalDate.now().getDayOfMonth();
-        if (day >= 5 && day <= 15) {
-            int count = 0;
-            for (Customer c : logic.getCustomerData()) {
-                if (c.getCurrentDebt() > 0) {
-                    File statement = logic.generateMonthlyStatement(c);
-                    if (statement != null) count++;
-                }
-            }
-            customerTable.refresh();
-            informationLabel.setText(count + " statement(s) generated.");
-            informationLabel.setStyle("-fx-text-fill: green;");
-        } else {
-            informationLabel.setText("Statements can only be generated between 5th-15th of month.");
-            informationLabel.setStyle("-fx-text-fill: red;");
+        if (day < 5 || day > 15) {
+            showInfo("Statements can only be generated between 5th-15th of month.", true);
+            return;
         }
+        int count = 0;
+        for (Customer c : logic.getCustomerData()) {
+            if (c.getCurrentDebt() > 0 && logic.generateMonthlyStatement(c) != null) count++;
+        }
+        customerTable.refresh();
+        showInfo(count + " statement(s) generated.", false);
     }
 
     @FXML
     private void handleGenerateFirstReminder() {
-        Customer selected = customerTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            if (selected.getCurrentDebt() > 0 && "due".equals(selected.getStatus1stReminder())) {
-                File reminder = logic.generateFirstReminder(selected);
-                if (reminder != null) {
-                    try {
-                        if (java.awt.Desktop.isDesktopSupported()) {
-                            java.awt.Desktop.getDesktop().browse(reminder.toURI());
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    customerTable.refresh();
-                    informationLabel.setText("First reminder generated for " + selected.getName());
-                    informationLabel.setStyle("-fx-text-fill: green;");
-                }
-            } else if (selected.getCurrentDebt() <= 0) {
-                informationLabel.setText("Customer has no outstanding debt.");
-                informationLabel.setStyle("-fx-text-fill: red;");
-            } else {
-                informationLabel.setText("First reminder not due for this customer.");
-                informationLabel.setStyle("-fx-text-fill: red;");
-            }
-        } else {
-            informationLabel.setText("Please select a customer first.");
-            informationLabel.setStyle("-fx-text-fill: red;");
-        }
+        Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
+        if (selected == null) { showInfo("Select a customer.", true); return; }
+        if (selected.getCurrentDebt() <= 0) { showInfo("No debt to remind about.", true); return; }
+        if (!"due".equals(selected.getStatus1stReminder())) { showInfo("1st reminder not due yet.", true); return; }
+
+        File reminder = logic.generateFirstReminder(selected);
+        openFile(reminder, selected.getName() + " - 1st Reminder");
     }
 
     @FXML
     private void handleGenerateSecondReminder() {
-        Customer selected = customerTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            if (selected.getCurrentDebt() > 0 && "due".equals(selected.getStatus2ndReminder())) {
-                LocalDate date2nd = selected.getDate2ndReminder();
-                if (date2nd != null && !date2nd.isAfter(LocalDate.now())) {
-                    File reminder = logic.generateSecondReminder(selected);
-                    if (reminder != null) {
-                        try {
-                            if (java.awt.Desktop.isDesktopSupported()) {
-                                java.awt.Desktop.getDesktop().browse(reminder.toURI());
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        customerTable.refresh();
-                        informationLabel.setText("Second reminder generated for " + selected.getName());
-                        informationLabel.setStyle("-fx-text-fill: green;");
-                    }
-                } else {
-                    informationLabel.setText("Second reminder not yet due (scheduled: " +
-                            (date2nd != null ? date2nd.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) : "unknown") + ")");
-                    informationLabel.setStyle("-fx-text-fill: red;");
-                }
-            } else if (selected.getCurrentDebt() <= 0) {
-                informationLabel.setText("Customer has no outstanding debt.");
-                informationLabel.setStyle("-fx-text-fill: red;");
-            } else {
-                informationLabel.setText("Second reminder not due for this customer.");
-                informationLabel.setStyle("-fx-text-fill: red;");
-            }
-        } else {
-            informationLabel.setText("Please select a customer first.");
-            informationLabel.setStyle("-fx-text-fill: red;");
-        }
+        Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
+        if (selected == null) { showInfo("Select a customer.", true); return; }
+        if (selected.getCurrentDebt() <= 0) { showInfo("No debt to remind about.", true); return; }
+        if (!"due".equals(selected.getStatus2ndReminder())) { showInfo("2nd reminder not due yet.", true); return; }
+
+        LocalDate date2nd = selected.getDate2ndReminder();
+        if (date2nd == null || date2nd.isAfter(LocalDate.now())) { showInfo("2nd reminder date not reached.", true); return; }
+
+        File reminder = logic.generateSecondReminder(selected);
+        openFile(reminder, selected.getName() + " - 2nd Reminder");
     }
 
     @FXML
@@ -317,57 +316,76 @@ public class CustomerView {
         int count = 0;
         for (Customer c : logic.getCustomerData()) {
             logic.processReminders(c);
-            if ("sent".equals(c.getStatus1stReminder()) || "sent".equals(c.getStatus2ndReminder())) {
-                count++;
-            }
+            if ("sent".equals(c.getStatus1stReminder()) || "sent".equals(c.getStatus2ndReminder())) count++;
         }
         customerTable.refresh();
-        informationLabel.setText("Processed reminders for " + count + " customer(s).");
-        informationLabel.setStyle("-fx-text-fill: green;");
+        showInfo("Processed reminders for " + count + " customer(s).", false);
     }
 
     @FXML
-    private void handlePayment() {
-        Customer selected = customerTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            if (selected.getCurrentDebt() > 0) {
-                // Record payment - reset debt and reminder statuses
-                selected.setCurrentDebt(0.0);
-                // ✅ SAVE TO DATABASE
-                logic.updateCustomer(selected);
-                logic.resetRemindersOnPayment(selected);
-                customerTable.refresh();
-                informationLabel.setText("Payment recorded for " + selected.getName() + ". Statuses reset.");
-                informationLabel.setStyle("-fx-text-fill: green;");
-            } else {
-                informationLabel.setText("No outstanding debt to pay.");
-                informationLabel.setStyle("-fx-text-fill: red;");
-            }
+    private void handleDemoFirstReminder() {
+        Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
+        if (selected == null) {
+            showInfo("Select a customer to demo.", true);
+            return;
+        }
+
+        File reminder = logic.generateFirstReminder(selected);
+        if (reminder != null) {
+            openFile(reminder, selected.getName() + " - DEMO 1st Reminder");
+            showInfo("DEMO: 1st Reminder generated (Checks bypassed).", false);
         } else {
-            informationLabel.setText("Please select an account first.");
-            informationLabel.setStyle("-fx-text-fill: red;");
+            showInfo("Failed to generate demo reminder.", true);
+        }
+    }
+
+    @FXML
+    private void handleDemoSecondReminder() {
+        Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
+        if (selected == null) {
+            showInfo("Select a customer to demo.", true);
+            return;
+        }
+
+        File reminder = logic.generateSecondReminder(selected);
+        if (reminder != null) {
+            openFile(reminder, selected.getName() + " - DEMO 2nd Reminder");
+            showInfo("DEMO: 2nd Reminder generated (Checks bypassed).", false);
+        } else {
+            showInfo("Failed to generate demo reminder.", true);
+        }
+    }
+
+    private void openFile(File file, String description) {
+        if (file != null) {
+            try {
+                if (java.awt.Desktop.isDesktopSupported()) {
+                    java.awt.Desktop.getDesktop().browse(file.toURI());
+                }
+                customerTable.refresh();
+            } catch (Exception e) {
+                showInfo("Error opening " + description + ": " + e.getMessage(), true);
+            }
         }
     }
 
     private void clearInputs() {
-        nameInput.clear();
-        emailInput.clear();
-        addressInput.clear();
-        townInput.clear();
-        postcodeInput.clear();
-        limitInput.clear();
-        titleCombo.setValue(null);
+        if (nameInput != null) nameInput.clear();
+        if (emailInput != null) emailInput.clear();
+        if (addressInput != null) addressInput.clear();
+        if (townInput != null) townInput.clear();
+        if (postcodeInput != null) postcodeInput.clear();
+        if (limitInput != null) limitInput.clear();
+        if (titleCombo != null) titleCombo.setValue(null);
     }
 
-    private void showAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Customer Management");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    private void showInfo(String message, boolean isError) {
+        if (informationLabel != null) {
+            informationLabel.setText(message);
+            informationLabel.setStyle("-fx-text-fill: " + (isError ? "red" : "green") + "; -fx-font-weight: bold;");
+        }
     }
 
-    // ✅ Setter for role (call from LoginView after authentication)
     public void setCurrentUserRole(String role) {
         this.currentUserRole = role;
         setupRoleBasedControls();
