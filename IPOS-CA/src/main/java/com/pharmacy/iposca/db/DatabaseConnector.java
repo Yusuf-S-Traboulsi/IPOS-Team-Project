@@ -16,9 +16,15 @@ public class DatabaseConnector {
     private static final String SA_USER = "root";
     private static final String SA_PASSWORD = "Swim1234";
 
+    // IPOS-PU Database (Portal System) - ADD THIS
+    private static final String PU_URL = "jdbc:mysql://127.0.0.1:3306/ipos_pu?useSSL=false&allowPublicKeyRetrieval=true";
+    private static final String PU_USER = "root";
+    private static final String PU_PASSWORD = "Swim1234";
+
     static {
         testCADatabase();
         testSADatabase();
+        testPUDatabase();
     }
 
     public static Connection getConnection() throws SQLException {
@@ -34,6 +40,15 @@ public class DatabaseConnector {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             return DriverManager.getConnection(SA_URL, SA_USER, SA_PASSWORD);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("MySQL JDBC Driver not found.", e);
+        }
+    }
+
+    public static Connection getPUConnection() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection(PU_URL, PU_USER, PU_PASSWORD);
         } catch (ClassNotFoundException e) {
             throw new SQLException("MySQL JDBC Driver not found.", e);
         }
@@ -58,6 +73,14 @@ public class DatabaseConnector {
         } catch (SQLException e) {
             System.err.println("❌ FAILED to connect to IPOS-SA database!");
             System.err.println("   Error: " + e.getMessage());
+        }
+    }
+
+    private static void testPUDatabase() {
+        try (Connection conn = getPUConnection()) {
+            System.out.println("✅ Connected to IPOS-PU database");
+        } catch (SQLException e) {
+            System.err.println("❌ FAILED to connect to IPOS-PU: " + e.getMessage());
         }
     }
 }

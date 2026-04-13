@@ -5,6 +5,8 @@ import com.pharmacy.iposca.model.DocumentTemplate;
 import com.pharmacy.iposca.model.MerchantSettings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 
 import java.sql.*;
 import java.util.HashMap;
