@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
+
+<VBox spacing="15" style="-fx-padding: 20; -fx-background-color: #f8f9fa;"
+      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.pharmacy.iposca.ui.PortalOrdersView">
+
+    <!-- Header -->
+    <Label text="Portal Orders (IPOS-PU)"
+           style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+    <Label text="Manage online orders received from the web portal."
+           style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
+
+    <!-- Search / Filter Toolbar -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="searchField" promptText="Search by Email or Order ID..."
+                   style="-fx-pref-height: 32; -fx-font-size: 12px; -fx-border-radius: 4; -fx-background-radius: 4;"/>
+
+        <ComboBox fx:id="statusFilter" promptText="Filter by Status" prefWidth="150">
+            <items>
+                <FXCollections fx:factory="observableArrayList">
+                    <!-- MATCHES DB ENUM: 'Received', 'Dispatched', 'Shipped', 'Delivered' -->
+                    <String fx:value="ALL"/>
+                    <String fx:value="Received"/>
+                    <String fx:value="Dispatched"/>
+                    <String fx:value="Shipped"/>
+                    <String fx:value="Delivered"/>
+                </FXCollections>
+            </items>
+        </ComboBox>
+
+        <Button text="Refresh Data" onAction="#handleRefresh"
+                style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 15; -fx-cursor: hand;"/>
+    </HBox>
+
+    <!-- Orders Table -->
+    <TableView fx:id="ordersTable" VBox.vgrow="ALWAYS"
+               style="-fx-font-size: 11px; -fx-background-color: white; -fx-border-color: #dcdcdc; -fx-border-width: 1;">
+        <columns>
+            <TableColumn fx:id="colId" text="Order ID" prefWidth="80"/>
+            <TableColumn fx:id="colDate" text="Date" prefWidth="100"/>
+            <TableColumn fx:id="colCustomer" text="Customer" prefWidth="150"/>
+            <TableColumn fx:id="colAddress" text="Delivery Address" prefWidth="200"/>
+            <TableColumn fx:id="colAmount" text="Total (£)" prefWidth="80"/>
+            <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
+            <TableColumn fx:id="colPayment" text="Payment" prefWidth="100"/>
+            <TableColumn fx:id="colAction" text="Actions" prefWidth="120"/>
+        </columns>
+        <columnResizePolicy>
+            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+        </columnResizePolicy>
+    </TableView>
+
+    <!-- Info Label -->
+    <Label fx:id="infoLabel" style="-fx-text-fill: green; -fx-font-weight: bold;"/>
+</VBox>

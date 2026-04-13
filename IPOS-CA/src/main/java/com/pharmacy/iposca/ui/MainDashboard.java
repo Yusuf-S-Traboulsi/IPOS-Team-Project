@@ -77,7 +77,7 @@ public class MainDashboard {
             System.err.println("Could not load Discount Settings");
             e.printStackTrace();
         }
-    } */
+    }
 
     /**
      * Load Merchant/Template Settings screen
@@ -93,13 +93,23 @@ public class MainDashboard {
         }
     }
 
+    @FXML
+    private void showOnlineOrders() {
+        try {
+            MerchantSettingsView templatesView = new MerchantSettingsView();
+            contentArea.getChildren().setAll(templatesView);
+        } catch (Exception e) {
+            System.err.println("Could not load Template Settings");
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Generic method to load FXML screens into the content area
      * @param fxmlFile Path to the FXML file (e.g., "/com/pharmacy/iposca/InventoryView.fxml")
      */
     private void loadScreen(String fxmlFile) {
         try {
-            // FIXED: Use getClass().getResource() instead of Launcher.class.getResource()
             Parent screen = FXMLLoader.load(getClass().getResource(fxmlFile));
             contentArea.getChildren().setAll(screen);
         } catch (IOException e) {

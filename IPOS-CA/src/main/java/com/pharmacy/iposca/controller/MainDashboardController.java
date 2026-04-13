@@ -5,29 +5,18 @@ import com.pharmacy.iposca.model.User;
 import com.pharmacy.iposca.ui.DiscountSettingsView;
 import com.pharmacy.iposca.ui.MerchantSettingsView;
 import com.pharmacy.iposca.ui.SupplierLoginView;
-import com.pharmacy.iposca.ui.SupplierView;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.stage.Stage;
-
 import java.io.IOException;
+import java.net.URL;
 
 /**
  * Main Dashboard Controller - Handles navigation and role-based permissions
- *
- * Role Permissions (Per Briefing Requirements):
- * - Admin: ONLY Admin module
- * - Manager: Everything EXCEPT Admin (including Discount Settings, Templates, Reports & Suppliers)
- * - Pharmacist: Everything EXCEPT Admin AND Reports AND Templates (including Discount Settings & Suppliers)
  */
 public class MainDashboardController {
 
@@ -37,22 +26,19 @@ public class MainDashboardController {
     @FXML private Label titleLabel;
     @FXML private Label userLabel;
 
-
-
     // Navigation Buttons
     @FXML private Button posBtn;
     @FXML private Button inventoryBtn;
     @FXML private Button customerBtn;
-    @FXML private Button financeBtn;
     @FXML private Button supplierBtn;
     @FXML private Button discountBtn;
     @FXML private Button templatesBtn;
     @FXML private Button adminBtn;
     @FXML private Button reportBtn;
+    @FXML private Button onlineOrderBtn; // Added for PU Orders
     @FXML private Button logoutBtn;
 
     private User currentUser;
-
 
     /**
      * Helper method for section labels in sidebar
@@ -81,13 +67,9 @@ public class MainDashboardController {
         // Role-specific button visibility
         if (user.isAdmin()) {
             // Admin: ONLY Admin module
-            navButtons.getChildren().add(createSectionLabel("Admin"));
-            if (adminBtn != null) {
-                navButtons.getChildren().add(adminBtn);
-            }
-            if (titleLabel != null) {
-                titleLabel.setText("Admin Panel");
-            }
+            navButtons.getChildren().add(createSectionLabel("SYSTEM"));
+            if (adminBtn != null) navButtons.getChildren().add(adminBtn);
+            if (titleLabel != null) titleLabel.setText("Admin Panel");
 
         } else if (user.isManager()) {
             // Manager: Everything EXCEPT Admin
@@ -95,6 +77,12 @@ public class MainDashboardController {
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
             if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);
+
+            // ADD ONLINE ORDERS FOR MANAGER
+            if (onlineOrderBtn != null) {
+                navButtons.getChildren().add(createSectionLabel("ONLINE SALES"));
+                navButtons.getChildren().add(onlineOrderBtn);
+            }
 
             navButtons.getChildren().add(createSectionLabel("ACCOUNT HOLDERS"));
             if (customerBtn != null) navButtons.getChildren().add(customerBtn);
@@ -104,9 +92,7 @@ public class MainDashboardController {
             if (templatesBtn != null) navButtons.getChildren().add(templatesBtn);
             if (reportBtn != null) navButtons.getChildren().add(reportBtn);
 
-            if (titleLabel != null) {
-                titleLabel.setText("Manager Dashboard");
-            }
+            if (titleLabel != null) titleLabel.setText("Manager Dashboard");
 
         } else if (user.isPharmacist()) {
             // Pharmacist: Everything EXCEPT Admin AND Reports AND Templates
@@ -115,37 +101,43 @@ public class MainDashboardController {
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
             if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);
 
+            // ADD ONLINE ORDERS FOR PHARMACIST
+            if (onlineOrderBtn != null) {
+                navButtons.getChildren().add(createSectionLabel("ONLINE SALES"));
+                navButtons.getChildren().add(onlineOrderBtn);
+            }
+
             navButtons.getChildren().add(createSectionLabel("ACCOUNT HOLDERS"));
             if (customerBtn != null) navButtons.getChildren().add(customerBtn);
             if (discountBtn != null) navButtons.getChildren().add(discountBtn);
-            // NO Templates button for Pharmacist
-            // NO Reports button for Pharmacist
 
-            if (titleLabel != null) {
-                titleLabel.setText("Pharmacist Dashboard");
-            }
+            if (titleLabel != null) titleLabel.setText("Pharmacist Dashboard");
         }
     }
 
     /**
-     * Load a view into the content area
+     * Load a view into the content area safely
      */
     private void loadView(String fxmlPath, String title) {
         try {
-            Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
+            URL resource = getClass().getResource(fxmlPath);
+            if (resource == null) {
+                throw new IOException("Resource not found: " + fxmlPath);
+            }
+            Parent view = FXMLLoader.load(resource);
             contentArea.getChildren().setAll(view);
             if (titleLabel != null) {
                 titleLabel.setText(title);
             }
         } catch (IOException e) {
             e.printStackTrace();
-            contentArea.getChildren().setAll(
-                    new Label("Error loading: " + fxmlPath)
-            );
+            Label errorLabel = new Label("Error loading: " + fxmlPath + "\n" + e.getMessage());
+            errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 14px; -fx-wrap-text: true;");
+            contentArea.getChildren().setAll(errorLabel);
         }
     }
 
-    //nav below
+    // --- Navigation Handlers ---
 
     @FXML
     private void showPOS() {
@@ -169,48 +161,35 @@ public class MainDashboardController {
 
     @FXML
     private void showReports() {
-        // Security check: Only Manager can access reports
         if (currentUser != null && currentUser.isManager()) {
             loadView("/com/pharmacy/iposca/ReportingView.fxml", "Reports");
         } else {
-            contentArea.getChildren().setAll(
-                    new Label("Access Denied: Reports module is for Manager role only.")
-            );
+            contentArea.getChildren().setAll(new Label("Access Denied: Reports are for Managers only."));
         }
     }
 
     @FXML
     private void showDiscountSettings() {
-        // Security check: Manager and Pharmacist can access Discount Settings
         if (currentUser != null && (currentUser.isManager() || currentUser.isPharmacist())) {
             loadView("/com/pharmacy/iposca/discount_settings.fxml", "Discount Settings");
         } else {
-            contentArea.getChildren().setAll(
-                    new Label("Access Denied: Discount Settings is for Manager and Pharmacist roles only.")
-            );
+            contentArea.getChildren().setAll(new Label("Access Denied."));
         }
     }
 
     @FXML
     private void showTemplates() {
-        // Security check: ONLY Manager can access Templates
         if (currentUser != null && currentUser.isManager()) {
             try {
                 MerchantSettingsView templatesView = new MerchantSettingsView();
                 contentArea.getChildren().setAll(templatesView);
-                if (titleLabel != null) {
-                    titleLabel.setText("Templates & Merchant Settings");
-                }
+                if (titleLabel != null) titleLabel.setText("Templates & Merchant Settings");
             } catch (Exception e) {
                 e.printStackTrace();
-                contentArea.getChildren().setAll(
-                        new Label("Error loading Templates: " + e.getMessage())
-                );
+                contentArea.getChildren().setAll(new Label("Error: " + e.getMessage()));
             }
         } else {
-            contentArea.getChildren().setAll(
-                    new Label("Access Denied: Templates module is for Manager role only.")
-            );
+            contentArea.getChildren().setAll(new Label("Access Denied: Templates are for Managers only."));
         }
     }
 
@@ -218,22 +197,25 @@ public class MainDashboardController {
     private void showSuppliers() {
         if (currentUser != null && (currentUser.isManager() || currentUser.isPharmacist())) {
             try {
-                // Show IPOS-SA login first
                 SupplierLoginView loginView = new SupplierLoginView();
                 contentArea.getChildren().setAll(loginView);
-                if (titleLabel != null) {
-                    titleLabel.setText("IPOS-SA Supplier Portal");
-                }
+                if (titleLabel != null) titleLabel.setText("IPOS-SA Supplier Portal");
             } catch (Exception e) {
                 e.printStackTrace();
-                contentArea.getChildren().setAll(
-                        new Label("Error loading Supplier System: " + e.getMessage())
-                );
+                contentArea.getChildren().setAll(new Label("Error: " + e.getMessage()));
             }
         } else {
-            contentArea.getChildren().setAll(
-                    new Label("Access Denied: Supplier ordering is for Manager and Pharmacist roles only.")
-            );
+            contentArea.getChildren().setAll(new Label("Access Denied."));
+        }
+    }
+
+
+    @FXML
+    private void showOnlineOrders() {
+        if (currentUser != null && currentUser.isManager()) {
+            loadView("/com/pharmacy/iposca/PortalOrdersView.fxml", "Online Orders");
+        } else {
+            contentArea.getChildren().setAll(new Label("Access Denied: Portal are for Pharmacists and Managers only."));
         }
     }
 
@@ -242,13 +224,11 @@ public class MainDashboardController {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/pharmacy/iposca/LoginView.fxml"));
             Parent root = loader.load();
-
-            Stage stage = (Stage) sidebar.getScene().getWindow();
-            Scene scene = new Scene(root, Launcher.WIDTH, Launcher.HEIGHT);
+            javafx.stage.Stage stage = (javafx.stage.Stage) sidebar.getScene().getWindow();
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, Launcher.WIDTH, Launcher.HEIGHT);
             stage.setScene(scene);
             stage.setTitle("IPOS-CA - System Login");
             stage.centerOnScreen();
-
         } catch (IOException e) {
             e.printStackTrace();
         }
