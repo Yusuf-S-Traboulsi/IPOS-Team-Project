@@ -3,8 +3,7 @@ package com.pharmacy.iposca.model;
 import javafx.beans.property.*;
 
 /**
- * Document Template Model
- * Stores customizable templates for invoices, reminders, etc.
+ * This class represents a document template for the pharmacy inventory system.
  */
 public class DocumentTemplate {
 

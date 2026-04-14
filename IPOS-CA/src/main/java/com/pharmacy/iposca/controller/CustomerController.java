@@ -13,9 +13,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Customer Controller - Full MySQL Database Integration
- * All customer data is loaded from and saved to MySQL database
- * Includes discount plan management (Fixed & Flexible plans)
+ * This class handles all customer data that is loaded from and saved to the database
+ * Includes discount plan management (Fixed & Flexible/variable plans)
  */
 public class CustomerController {
 
@@ -35,7 +34,7 @@ public class CustomerController {
     }
 
     /**
-     * Load all customers from MySQL database on startup
+     * Load all customers from database on startup
      */
     private void loadCustomersFromDatabase() {
         String sql = "SELECT * FROM customers ORDER BY id";
@@ -64,7 +63,7 @@ public class CustomerController {
                 c.setDiscountRate(rs.getDouble("discount_rate"));
                 c.setMonthlyPurchaseTotal(rs.getDouble("monthly_purchase_total"));
 
-                // Load date fields (can be null)
+                // Load date fields, (can be null)
                 try {
                     Date d1 = rs.getDate("date_1st_reminder");
                     Date d2 = rs.getDate("date_2nd_reminder");
@@ -114,7 +113,7 @@ public class CustomerController {
     }
 
     /**
-     * ADD customer AND save to database
+     * Add customer and save to database
      */
     public boolean addCustomer(String title, String name, String email, String address,
                                String town, String postcode, double limit) {
@@ -149,19 +148,19 @@ public class CustomerController {
             if (rowsAffected > 0) {
                 Customer newCustomer = new Customer(nextId, title, name, email, address, town, postcode, limit, 0.0);
                 customerData.add(newCustomer);
-                System.out.println("✅ Customer added to database: " + name);
+                System.out.println("Customer added to database: " + name);
                 return true;
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Error adding customer: " + e.getMessage());
+            System.err.println("Error adding customer: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
     }
 
     /**
-     * UPDATE customer field AND save to database (Called from TableView edits)
+     * this method updates customer field and saves it to database (Called from TableView edits)
      */
     public boolean updateCustomerField(Customer customer, String fieldName, Object newValue) {
         if (customer == null) return false;
@@ -195,7 +194,7 @@ public class CustomerController {
     }
 
     /**
-     * UPDATE all customer data AND save to database
+     * updates all customer data AND saves it to the database
      */
     public boolean updateCustomer(Customer customer) {
         if (customer == null) return false;
@@ -256,7 +255,7 @@ public class CustomerController {
     }
 
     /**
-     * DELETE customer from database
+     * Method to delete customer from database
      */
     public boolean deleteCustomer(Customer c) {
         if (c == null) return false;
@@ -287,7 +286,7 @@ public class CustomerController {
     }
 
     /**
-     * Evaluate account statuses per briefing algorithm (Slide 39)
+     * Method to evaluate account status
      */
     public void evaluateAccountStatuses(LocalDate simulatedToday) {
         for (Customer c : customerData) {
@@ -307,7 +306,6 @@ public class CustomerController {
                     c.setStatus1stReminder("due");
                     statusChanged = true;
                 }
-
                 if (statusChanged) {
                     updateCustomer(c);
                 }
@@ -316,7 +314,7 @@ public class CustomerController {
     }
 
     /**
-     * Process reminders per briefing algorithm (Slide 39)
+     * Method to process debt reminders
      */
     public void processReminders(Customer customer) {
         if (customer == null || customer.getCurrentDebt() <= 0) return;
@@ -345,7 +343,7 @@ public class CustomerController {
     }
 
     /**
-     * Reset reminders when payment is received (Slide 39 algorithm)
+     * Method to reset debt reminders when payment is received
      */
     public void resetRemindersOnPayment(Customer customer) {
         if (customer == null) return;
@@ -360,16 +358,16 @@ public class CustomerController {
     }
 
     /**
-     * Update customer debt AND save to database
+     * Updates customer debt and saves it to database
      */
     public boolean updateCustomerDebt(Customer customer) {
         return updateCustomer(customer);
     }
 
-    // DISCOUNT MANAGEMENT METHODS - PRAY AND TEST THAT IT WORKS
 
+    //Discount Management Methods
     /**
-     * Set discount plan for a customer AND save to database
+     * Method to set discount plan for a customer and save it to database
      */
     public boolean setDiscountPlan(Customer customer, String planType, double rate) {
         if (customer == null) return false;
@@ -388,7 +386,7 @@ public class CustomerController {
     }
 
     /**
-     * Reset all customers' monthly purchase totals (call at start of each month)
+     * Reset all customers' monthly purchase totals, resets at the start of each month
      */
     public void resetAllMonthlyPurchaseTotals() {
         for (Customer c : customerData) {
@@ -399,7 +397,7 @@ public class CustomerController {
     }
 
     /**
-     * Add purchase amount to customer's monthly total (call after each sale)
+     * Add purchase amount to customer's monthly total
      */
     public void addPurchaseToMonthlyTotal(Customer customer, double amount) {
         if (customer != null && !"NONE".equals(customer.getDiscountPlanType())) {
@@ -409,8 +407,12 @@ public class CustomerController {
         }
     }
 
-    // ========== REPORT GENERATION METHODS ==========
 
+    //Report Methods
+
+    /**
+     * Method to generate a report of all customers including the html file
+     */
     public File generateMonthlyStatement(Customer customer) {
         if (customer == null || customer.getCurrentDebt() <= 0) return null;
 
@@ -436,6 +438,9 @@ public class CustomerController {
         return file;
     }
 
+    /**
+     * Generates first reminder html file for overdue customer with a 7-day due date
+     */
     public File generateFirstReminder(Customer customer) {
         if (customer == null || customer.getCurrentDebt() <= 0) return null;
 
@@ -462,6 +467,9 @@ public class CustomerController {
         return file;
     }
 
+    /**
+     * Generates second reminder html file for overdue customer with the unique invoice number
+     */
     public File generateSecondReminder(Customer customer) {
         if (customer == null || customer.getCurrentDebt() <= 0) return null;
 

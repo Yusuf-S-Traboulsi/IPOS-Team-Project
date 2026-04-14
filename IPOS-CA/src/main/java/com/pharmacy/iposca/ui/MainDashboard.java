@@ -94,7 +94,7 @@ public class MainDashboard {
 
     /**
      * Generic method to load FXML screens into the content area
-     * @param fxmlFile Path to the FXML file (e.g., "/com/pharmacy/iposca/InventoryView.fxml")
+     * @param fxmlFile Path to the FXML file
      */
     private void loadScreen(String fxmlFile) {
         try {

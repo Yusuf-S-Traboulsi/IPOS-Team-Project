@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Supplier Catalogue View - IPOS-SA Ordering System
+ * This UI class represents the Supplier Catalogue view.
  */
 public class SupplierCatalogueView extends VBox {
 
@@ -97,7 +97,6 @@ public class SupplierCatalogueView extends VBox {
         searchField = new TextField();
         searchField.setPromptText("Search by Item ID or Description...");
         searchField.setPrefWidth(300);
-
         categoryFilter = new ComboBox<>();
         categoryFilter.getItems().addAll("All", "Pain Relief", "Antiseptics", "Cold Relief", "Antibiotics", "Vitamins");
         categoryFilter.setValue("All");
@@ -109,35 +108,41 @@ public class SupplierCatalogueView extends VBox {
         catalogueTable = new TableView<>();
         catalogueTable.setItems(controller.getCatalogue());
         VBox.setVgrow(catalogueTable, Priority.ALWAYS);
-
         TableColumn<SupplierCatalogueItem, String> itemIdCol = new TableColumn<>("Item ID");
         itemIdCol.setCellValueFactory(new PropertyValueFactory<>("itemId"));
         itemIdCol.setPrefWidth(100);
 
+        // Item Description Column
         TableColumn<SupplierCatalogueItem, String> descriptionCol = new TableColumn<>("Description");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
         descriptionCol.setPrefWidth(200);
 
+        // Package Type Column
         TableColumn<SupplierCatalogueItem, String> packageTypeCol = new TableColumn<>("Package Type");
         packageTypeCol.setCellValueFactory(new PropertyValueFactory<>("packageType"));
         packageTypeCol.setPrefWidth(100);
 
+        // Unit Column
         TableColumn<SupplierCatalogueItem, String> unitCol = new TableColumn<>("Unit");
         unitCol.setCellValueFactory(new PropertyValueFactory<>("unit"));
         unitCol.setPrefWidth(60);
 
+        // Units Per Pack Column
         TableColumn<SupplierCatalogueItem, Integer> unitsPerPackCol = new TableColumn<>("Units/Pack");
         unitsPerPackCol.setCellValueFactory(new PropertyValueFactory<>("unitsPerPack"));
         unitsPerPackCol.setPrefWidth(80);
 
+        // Package Cost Column
         TableColumn<SupplierCatalogueItem, Double> packageCostCol = new TableColumn<>("Package Cost");
         packageCostCol.setCellValueFactory(new PropertyValueFactory<>("packageCost"));
         packageCostCol.setPrefWidth(120);
 
+        // Availability Column
         TableColumn<SupplierCatalogueItem, Integer> availabilityCol = new TableColumn<>("Availability");
         availabilityCol.setCellValueFactory(new PropertyValueFactory<>("availability"));
         availabilityCol.setPrefWidth(100);
 
+        // Add columns to the table
         catalogueTable.getColumns().addAll(itemIdCol, descriptionCol, packageTypeCol, unitCol,
                 unitsPerPackCol, packageCostCol, availabilityCol);
 
@@ -174,14 +179,17 @@ public class SupplierCatalogueView extends VBox {
         cartTable.setEditable(true);
         VBox.setVgrow(cartTable, Priority.ALWAYS);
 
+        // Cart Table Columns
         TableColumn<OrderCartItem, String> cartItemIdCol = new TableColumn<>("Item ID");
         cartItemIdCol.setCellValueFactory(new PropertyValueFactory<>("itemId"));
         cartItemIdCol.setPrefWidth(100);
 
+        // Item Description Column
         TableColumn<OrderCartItem, String> cartDescCol = new TableColumn<>("Description");
         cartDescCol.setCellValueFactory(new PropertyValueFactory<>("description"));
         cartDescCol.setPrefWidth(200);
 
+        // Quantity Column with Editable Cell
         TableColumn<OrderCartItem, Integer> cartQtyCol = new TableColumn<>("Quantity");
         cartQtyCol.setCellValueFactory(new PropertyValueFactory<>("quantity"));
         cartQtyCol.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
@@ -216,11 +224,13 @@ public class SupplierCatalogueView extends VBox {
         totalLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
         totalLabel.setStyle("-fx-text-fill: #2c3e50;");
 
+        // Submit Button
         Button submitButton = new Button("Submit Order to IPOS-SA");
         submitButton.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         submitButton.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 12 30;");
         submitButton.setOnAction(e -> submitOrder());
 
+        // Clear Order Button
         Button clearButton = new Button("Clear Order");
         clearButton.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
         clearButton.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 12 30;");
@@ -228,7 +238,6 @@ public class SupplierCatalogueView extends VBox {
             orderCart.clear();
             updateCartDisplay();
         });
-
         totalBox.getChildren().addAll(totalLabel, submitButton, clearButton);
 
         panel.getChildren().addAll(titleLabel, cartTable, removeFromOrderButton, totalBox);
@@ -250,18 +259,22 @@ public class SupplierCatalogueView extends VBox {
         ordersTable.setItems(controller.getOrders());
         VBox.setVgrow(ordersTable, Priority.ALWAYS);
 
+        // Order Columns
         TableColumn<SupplierOrder, String> orderIdCol = new TableColumn<>("Order ID");
         orderIdCol.setCellValueFactory(new PropertyValueFactory<>("orderId"));
         orderIdCol.setPrefWidth(100);
 
+        // Order Date Column
         TableColumn<SupplierOrder, LocalDate> orderDateCol = new TableColumn<>("Ordered");
         orderDateCol.setCellValueFactory(new PropertyValueFactory<>("orderDate"));
         orderDateCol.setPrefWidth(100);
 
+        // Order Amount Column
         TableColumn<SupplierOrder, Double> amountCol = new TableColumn<>("Amount");
         amountCol.setCellValueFactory(new PropertyValueFactory<>("totalAmount"));
         amountCol.setPrefWidth(100);
 
+        // Order Status Column
         TableColumn<SupplierOrder, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         statusCol.setPrefWidth(100);
@@ -389,34 +402,42 @@ public class SupplierCatalogueView extends VBox {
         invoicesTable.setItems(controller.getInvoices());
         invoicesTable.setPrefHeight(300);
 
+        // Invoice Columns
         TableColumn<SupplierController.Invoice, String> invoiceIdCol = new TableColumn<>("Invoice ID");
         invoiceIdCol.setCellValueFactory(new PropertyValueFactory<>("invoiceId"));
         invoiceIdCol.setPrefWidth(100);
 
+        // Invoice Order ID Column
         TableColumn<SupplierController.Invoice, String> invoiceOrderIdCol = new TableColumn<>("Order ID");
         invoiceOrderIdCol.setCellValueFactory(new PropertyValueFactory<>("orderId"));
         invoiceOrderIdCol.setPrefWidth(100);
 
+        // Invoice Date Column
         TableColumn<SupplierController.Invoice, LocalDate> invoiceDateCol = new TableColumn<>("Invoice Date");
         invoiceDateCol.setCellValueFactory(new PropertyValueFactory<>("invoiceDate"));
         invoiceDateCol.setPrefWidth(100);
 
+        // Invoice Amount Column
         TableColumn<SupplierController.Invoice, Double> invoiceAmountCol = new TableColumn<>("Amount");
         invoiceAmountCol.setCellValueFactory(new PropertyValueFactory<>("amount"));
         invoiceAmountCol.setPrefWidth(100);
 
+        // Invoice Paid Amount Column
         TableColumn<SupplierController.Invoice, Double> paidAmountCol = new TableColumn<>("Paid");
         paidAmountCol.setCellValueFactory(new PropertyValueFactory<>("paidAmount"));
         paidAmountCol.setPrefWidth(100);
 
+        // Invoice Outstanding Balance Column
         TableColumn<SupplierController.Invoice, Double> balanceCol = new TableColumn<>("Outstanding");
         balanceCol.setCellValueFactory(new PropertyValueFactory<>("outstandingBalance"));
         balanceCol.setPrefWidth(100);
 
+        // Invoice Status Column
         TableColumn<SupplierController.Invoice, String> invoiceStatusCol = new TableColumn<>("Status");
         invoiceStatusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
         invoiceStatusCol.setPrefWidth(100);
 
+        // Add columns to the table
         invoicesTable.getColumns().addAll(invoiceIdCol, invoiceOrderIdCol, invoiceDateCol,
                 invoiceAmountCol, paidAmountCol, balanceCol, invoiceStatusCol);
 
@@ -447,8 +468,9 @@ public class SupplierCatalogueView extends VBox {
         return panel;
     }
 
-    //ACTION METHODS
-
+    /**
+     * Adds selected catalogue item to order cart
+     */
     private void addToOrder() {
         SupplierCatalogueItem selected = catalogueTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -459,6 +481,7 @@ public class SupplierCatalogueView extends VBox {
         }
 
         for (OrderCartItem cartItem : orderCart) {
+            // Increments quantity and total for existing cart item
             if (cartItem.itemId.get().equals(selected.getItemId())) {
                 cartItem.quantity.set(cartItem.quantity.get() + 1);
                 cartItem.total.set(cartItem.quantity.get() * cartItem.unitCost.get());
@@ -481,6 +504,9 @@ public class SupplierCatalogueView extends VBox {
         infoLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
     }
 
+    /**
+     * Method to remove the selected cart item and refreshes display
+     */
     private void removeFromOrder() {
         OrderCartItem selected = cartTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -494,6 +520,9 @@ public class SupplierCatalogueView extends VBox {
         infoLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
     }
 
+    /**
+     * Method to refresh the cart table
+     */
     private void updateCartDisplay() {
         if (cartTable != null) {
             cartTable.refresh();
@@ -509,6 +538,8 @@ public class SupplierCatalogueView extends VBox {
         String category = categoryFilter.getValue();
 
         ObservableList<SupplierCatalogueItem> filtered = FXCollections.observableArrayList();
+
+        // Filters catalogue items matching search text and category criteria
         for (SupplierCatalogueItem item : controller.getCatalogue()) {
             boolean matchesSearch = item.getItemId().toLowerCase().contains(searchText) ||
                     item.getDescription().toLowerCase().contains(searchText);
@@ -550,6 +581,9 @@ public class SupplierCatalogueView extends VBox {
         }
     }
 
+    /**
+     * Validates selection and status then confirms payment marking via controller
+     */
     private void markSelectedAsPaid() {
         SupplierOrder selected = ordersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -569,8 +603,11 @@ public class SupplierCatalogueView extends VBox {
                 String.format("%.2f", selected.getTotalAmount()) +
                 "\n\nThis will mark the invoice as paid in IPOS-SA.");
 
+
         confirmAlert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
+
+                // Confirms payment success refreshes orders and balance if successful
                 boolean success = controller.markOrderAsPaid(selected.getOrderId());
                 if (success) {
                     showAlert("Payment confirmed!\nOrder " + selected.getOrderId() + " marked as paid.");
@@ -584,6 +621,9 @@ public class SupplierCatalogueView extends VBox {
         });
     }
 
+    /**
+     * Confirms and processes selected invoice payment
+     */
     private void paySelectedInvoice() {
         SupplierController.Invoice selected = invoicesTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
@@ -606,6 +646,8 @@ public class SupplierCatalogueView extends VBox {
         confirmAlert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 boolean success = controller.markOrderAsPaid(selected.getOrderId());
+
+                // Processes payment confirmation, refreshes tables if successful
                 if (success) {
                     showAlert("Payment processed!\nInvoice " + selected.getInvoiceId() + " marked as paid.");
                     invoicesTable.setItems(controller.getInvoices());
@@ -626,6 +668,9 @@ public class SupplierCatalogueView extends VBox {
         }
     }
 
+    /**
+     * Generates monthly orders summary report and notifies user
+     */
     private void generateOrdersSummaryReport() {
         LocalDate startDate = LocalDate.now().withDayOfMonth(1);
         LocalDate endDate = LocalDate.now();
@@ -633,6 +678,9 @@ public class SupplierCatalogueView extends VBox {
         showAlert("Orders Summary Report generated:\n" + reportFile.getName());
     }
 
+    /**
+     * Generates detailed order report for selected order
+     */
     private void generateDetailedOrderReport() {
         SupplierOrder selectedOrder = ordersTable.getSelectionModel().getSelectedItem();
         if (selectedOrder == null) {
@@ -654,8 +702,9 @@ public class SupplierCatalogueView extends VBox {
         alert.showAndWait();
     }
 
-    // ===== INNER CLASS: OrderCartItem =====
-
+    /**
+     * Class that represents an item in the order cart.
+     */
     public static class OrderCartItem {
         public final StringProperty itemId;
         public final StringProperty description;
@@ -671,6 +720,7 @@ public class SupplierCatalogueView extends VBox {
             this.total = new SimpleDoubleProperty(total);
         }
 
+        //Getter methods
         public String getItemId() { return itemId.get(); }
         public String getDescription() { return description.get(); }
         public int getQuantity() { return quantity.get(); }

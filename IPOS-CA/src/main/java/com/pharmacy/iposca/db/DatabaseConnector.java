@@ -5,26 +5,21 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Database Connector for IPOS-CA and IPOS-SA
- *
- * IPOS-CA: Pharmacy system (ipos_ca database) - Direct access
- * IPOS-SA: Supplier system (ipos_sa database) - ONLY via SupplierRestAPI
+ * This class handles database connections.
  */
 public class DatabaseConnector {
 
-    // IPOS-CA Database (Pharmacy System)
+    // IPOS-CA Database
     private static final String CA_URL = "jdbc:mysql://127.0.0.1:3306/ipos_ca?useSSL=false&allowPublicKeyRetrieval=true";
 
-    // ✅ Use System.getProperty() with fallback defaults
     private static final String CA_USER =
             System.getProperty("IPOS_CA_DB_USER", "root");
     private static final String CA_PASSWORD =
             System.getProperty("IPOS_CA_DB_PASSWORD", "Swim1234");
 
-    // IPOS-SA Database (Supplier System) - SEPARATE DATABASE!
+    // IPOS-SA Database
     private static final String SA_URL = "jdbc:mysql://127.0.0.1:3306/ipos_sa?useSSL=false&allowPublicKeyRetrieval=true";
 
-    // ✅ Use System.getProperty() with fallback defaults
     private static final String SA_USER =
             System.getProperty("IPOS_SA_DB_USER", "root");
     private static final String SA_PASSWORD =
@@ -47,8 +42,7 @@ public class DatabaseConnector {
     }
 
     /**
-     * Get connection to IPOS-SA database (SEPARATE!)
-     * ONLY used by SupplierRestAPI
+     * Get connection to IPOS-SA database
      */
     public static Connection getSAConnection() throws SQLException {
         try {

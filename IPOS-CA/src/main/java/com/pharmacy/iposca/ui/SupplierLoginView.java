@@ -10,9 +10,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 /**
- * IPOS-SA Supplier Login Screen
+ * This UI class handles the Supplier Login module.
  * Simulates authentication with external IPOS-SA system
- * Credentials stored in MySQL database (ipos_sa_users table)
  */
 public class SupplierLoginView extends VBox {
 

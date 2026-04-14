@@ -7,6 +7,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.paint.Color;
 
+/**
+ * This UI class handles the Admin module
+ */
 public class AdminView {
     @FXML private TableView<User> userTable;
     @FXML private TableColumn<User, Integer> idCol;

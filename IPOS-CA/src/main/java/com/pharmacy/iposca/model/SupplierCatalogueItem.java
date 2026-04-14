@@ -3,8 +3,7 @@ package com.pharmacy.iposca.model;
 import javafx.beans.property.*;
 
 /**
- * Supplier Catalogue Item Model
- * Matches Briefing Section 9.1 Catalogue Layout
+ * Class representing a supplier catalogue item.
  */
 public class SupplierCatalogueItem {
 

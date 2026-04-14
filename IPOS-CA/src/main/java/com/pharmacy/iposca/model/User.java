@@ -1,6 +1,9 @@
 package com.pharmacy.iposca.model;
 import javafx.beans.property.*;
 
+/**
+ * Class representing a user in the system.
+ */
 public class User {
     private final IntegerProperty id = new SimpleIntegerProperty();
     private final StringProperty username = new SimpleStringProperty();

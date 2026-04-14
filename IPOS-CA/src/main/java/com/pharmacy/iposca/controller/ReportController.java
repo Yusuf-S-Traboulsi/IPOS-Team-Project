@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Report Controller - Generates various business reports
+ * Controller class for generating reports
  * All reports use data from ipos_ca database
  */
 public class ReportController {
@@ -28,6 +28,9 @@ public class ReportController {
         this.sales = sal;
     }
 
+    /**
+     * Generates HTML turnover report for sales within the date range
+     */
     public File generateTurnoverReport(LocalDate startDate, LocalDate endDate) {
         File file = new File("TurnoverReport_" + startDate + "_to_" + endDate + ".html");
         StringBuilder html = new StringBuilder();
@@ -81,6 +84,9 @@ public class ReportController {
         return file;
     }
 
+    /**
+     * Generates complete stock report with VAT breakdowns and totals
+     */
     public File generateStockReport() {
         File file = new File("StockReport_" + LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
         StringBuilder html = new StringBuilder();
@@ -128,6 +134,9 @@ public class ReportController {
         return file;
     }
 
+    /**
+     * Generates debt change HTML report with customer details
+     */
     public File generateDebtChangeReport(LocalDate startDate, LocalDate endDate) {
         File file = new File("DebtChangeReport_" + startDate + "_to_" + endDate + ".html");
         StringBuilder html = new StringBuilder();

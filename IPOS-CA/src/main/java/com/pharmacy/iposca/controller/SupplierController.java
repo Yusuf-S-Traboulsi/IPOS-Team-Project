@@ -18,8 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Supplier Controller - Manages IPOS-SA ordering system
- * All supplier data is loaded from MySQL database (ipos_sa.supplier_* tables)
+ * This class manages IPOS-SA ordering system
  */
 public class SupplierController {
 
@@ -43,6 +42,7 @@ public class SupplierController {
 
     private void loadCatalogue() {
         String sql = "SELECT * FROM supplier_catalogue ORDER BY category, item_id";
+        // Loads and clears catalogue with ordered items
         try (Connection conn = DatabaseConnector.getSAConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -76,6 +76,8 @@ public class SupplierController {
              ResultSet rs = stmt.executeQuery(sql)) {
 
             orders.clear();
+            
+            // Loads orders from database into orders list
             while (rs.next()) {
                 SupplierOrder order = new SupplierOrder(
                         rs.getString("order_id"),
@@ -101,7 +103,7 @@ public class SupplierController {
 
     public String placeOrder(List<OrderItem> items) {
         if (items.isEmpty()) {
-            return "ERROR: Cart is empty";
+            return "ERROR: Cart is empty"; //checks to return error if cart is empty
         }
 
         String orderId = generateOrderId();
@@ -114,6 +116,7 @@ public class SupplierController {
         try (Connection conn = DatabaseConnector.getSAConnection()) {
             conn.setAutoCommit(false);
 
+            //Insert order into supplier_orders table
             try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
                 orderStmt.setString(1, orderId);
                 orderStmt.setDate(2, Date.valueOf(orderDate));
@@ -121,6 +124,7 @@ public class SupplierController {
                 orderStmt.executeUpdate();
             }
 
+            //Insert all items that belong to the order
             try (PreparedStatement itemStmt = conn.prepareStatement(itemSql)) {
                 for (OrderItem item : items) {
                     itemStmt.setString(1, orderId);
@@ -148,24 +152,25 @@ public class SupplierController {
 
             conn.commit();
             loadOrders();
-            System.out.println("✅ Order placed: " + orderId + " - Total: £" + totalAmount);
+            System.out.println("Order placed: " + orderId + " - Total: £" + totalAmount);
             return orderId;
 
         } catch (SQLException e) {
-            System.err.println("❌ Error placing order: " + e.getMessage());
+            System.err.println("Error placing order: " + e.getMessage());
             e.printStackTrace();
             return "ERROR: " + e.getMessage();
         }
     }
 
     private String generateOrderId() {
+        //Find the last order ID in the database and increment it by 1
         String sql = "SELECT MAX(CAST(SUBSTRING(order_id, 3) AS UNSIGNED)) as max_id FROM supplier_orders";
         try (Connection conn = DatabaseConnector.getSAConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) {
                 int maxId = rs.getInt("max_id");
-                return "IP" + String.format("%04d", maxId + 1);
+                return "IP" + String.format("%04d", maxId + 1); //Ensure the ID is 4 digits long and increments it
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -175,6 +180,7 @@ public class SupplierController {
 
     public double getOutstandingBalance() {
         String sql = "SELECT SUM(outstanding_balance) as total FROM supplier_invoices WHERE status = 'Unpaid'";
+        // Calculates total outstanding balance for unpaid supplier invoices
         try (Connection conn = DatabaseConnector.getSAConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -187,6 +193,9 @@ public class SupplierController {
         return 0.0;
     }
 
+    /**
+     * Gets and updates the order items list from database
+     */
     public List<OrderItem> getOrderItems(String orderId) {
         List<OrderItem> items = new ArrayList<>();
         String sql = "SELECT * FROM supplier_order_items WHERE order_id = ?";
@@ -213,10 +222,12 @@ public class SupplierController {
     public ObservableList<Invoice> getInvoices() {
         ObservableList<Invoice> invoices = FXCollections.observableArrayList();
         String sql = "SELECT * FROM supplier_invoices ORDER BY invoice_date DESC";
+
+        // Queries all supplier invoices in the database
         try (Connection conn = DatabaseConnector.getSAConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
+            while (rs.next()) { //loops through each row in the result set
                 invoices.add(new Invoice(
                         rs.getString("invoice_id"),
                         rs.getString("order_id"),
@@ -238,6 +249,7 @@ public class SupplierController {
         System.out.println("upMarking order " + orderId + " as delivered...");
         String sql = "UPDATE supplier_orders SET status = 'Delivered', delivered_date = ? WHERE order_id = ?";
 
+        // Updates order status to delivered
         try (Connection conn = DatabaseConnector.getSAConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -250,6 +262,7 @@ public class SupplierController {
                 System.out.println("Order status updated to Delivered");
                 boolean inventoryUpdated = updateInventoryFromOrder(orderId);
 
+                //syncing inventory with the database
                 if (inventoryUpdated) {
                     System.out.println("Order " + orderId + " marked as delivered - Inventory updated");
                     loadOrders();
@@ -312,15 +325,14 @@ public class SupplierController {
     }
 
     private boolean updateInventoryFromOrder(String orderId) {
-        // 1. Retrieve order items from the SA Database (ipos_sa)
-        // The supplier orders are stored in ipos_sa, not ipos_ca
         String getItemsSql = "SELECT * FROM supplier_order_items WHERE order_id = ?";
-        List<OrderItem> orderItems = new ArrayList<>();
+        List<OrderItem> orderItems = new ArrayList<>(); //Holds the order items retrieved for the current order
 
+        //Gets the order items from the supplier database and queries the order items
         try (Connection connSA = DatabaseConnector.getSAConnection();
              PreparedStatement getItemStmt = connSA.prepareStatement(getItemsSql)) {
 
-            getItemStmt.setString(1, orderId);
+            getItemStmt.setString(1, orderId); //Binds the order ID to the prepared statement
             try (ResultSet rs = getItemStmt.executeQuery()) {
                 while (rs.next()) {
                     orderItems.add(new OrderItem(
@@ -338,43 +350,55 @@ public class SupplierController {
             return false;
         }
 
+        //No items found for the order, nothing to update in inventory
         if (orderItems.isEmpty()) {
             System.out.println("No items found for order " + orderId);
             return false;
         }
 
-        // 2. Update product stock in the CA Database (ipos_ca)
-        // The actual inventory/products table is in ipos_ca
+        // update product stock in the ipos-ca database
         String updateProductSql = "UPDATE products SET stock = stock + ? WHERE name = ?";
         int itemsUpdated = 0;
 
         try (Connection connCA = DatabaseConnector.getConnection();
              PreparedStatement updateStmt = connCA.prepareStatement(updateProductSql)) {
 
+            //process each item in the order
             for (OrderItem item : orderItems) {
-                String supplierDescription = item.description;
-                int quantityDelivered = item.quantity;
+                String supplierDescription = item.description; //checks supplier description for produc
+                int quantityDelivered = item.quantity; //checks quantity delivered for product
 
                 System.out.println("  Processing: " + supplierDescription + " x " + quantityDelivered);
 
+                //Maps the supplier description to product name and update the stock in the database
                 String productName = mapSupplierItemToProductName(supplierDescription);
 
+                //Updating the stock when a matching product is found
                 if (productName != null && !productName.isEmpty()) {
-                    updateStmt.setInt(1, quantityDelivered);
-                    updateStmt.setString(2, productName);
+                    updateStmt.setInt(1, quantityDelivered); //this binds the quantity delivered to the prepared statement
+                    updateStmt.setString(2, productName); //this binds the product name to the prepared statement
+
+                    //Executes the stock update
                     int rowsAffected = updateStmt.executeUpdate();
 
+                    //Refreshing the local cache when the stock is updated
                     if (rowsAffected > 0) {
                         itemsUpdated++;
                         System.out.println("Added " + quantityDelivered + " units to product: " + productName);
                         updateLocalInventoryCache(productName, quantityDelivered);
+
+                    //The product was not found in the database
                     } else {
                         System.out.println("Product '" + productName + "' not found in products table");
                     }
+
+                //Supplier description does not match any product name in the database
                 } else {
                     System.out.println("Could not map supplier item '" + supplierDescription + "' to product");
                 }
             }
+
+        //Logging any errors that occur during the stock update process
         } catch (SQLException e) {
             System.err.println("Error updating inventory in CA database: " + e.getMessage());
             e.printStackTrace();
@@ -392,6 +416,9 @@ public class SupplierController {
         }
     }
 
+    /**
+     * Maps supplier descriptions to standardized product names
+     */
     private String mapSupplierItemToProductName(String supplierDescription) {
         if (supplierDescription == null || supplierDescription.trim().isEmpty()) {
             return null;
@@ -420,7 +447,7 @@ public class SupplierController {
             for (Product p : inventory.getProducts()) {
                 if (p.getName().equalsIgnoreCase(productName)) {
                     p.setStock(p.getStock() + quantity);
-                    System.out.println("  ✓ Local cache updated: " + p.getName() + " stock = " + p.getStock());
+                    System.out.println("Local cache updated: " + p.getName() + " stock = " + p.getStock());
                     break;
                 }
             }
@@ -429,10 +456,8 @@ public class SupplierController {
         }
     }
 
-    // ============================================================
-    // REPORT GENERATION METHODS
-    // ============================================================
 
+    // Report Generation methods
     public File generateOrderForm(String orderId) {
         File file = new File("OrderForm_" + orderId + "_" +
                 LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
@@ -541,7 +566,7 @@ public class SupplierController {
 
         StringBuilder html = new StringBuilder();
 
-        // Get ALL orders if no date range specified, otherwise filter
+        // Gets all orders if no date range specified, otherwise filter
         List<SupplierOrder> filteredOrders;
         if (startDate == null || endDate == null) {
             filteredOrders = new ArrayList<>(getOrders());
@@ -663,7 +688,7 @@ public class SupplierController {
 
         StringBuilder html = new StringBuilder();
 
-        // Get ALL orders if no date range specified
+        //Gets all orders if no date range specified
         List<SupplierOrder> filteredOrders;
         if (startDate == null || endDate == null) {
             filteredOrders = new ArrayList<>(getOrders());
@@ -809,7 +834,7 @@ public class SupplierController {
     }
 
     /**
-     * Escape HTML special characters to prevent encoding issues
+     *  Method to escape HTML special characters to prevent encoding issues
      */
     private String escapeHtml(String text) {
         if (text == null) return "";
@@ -828,12 +853,12 @@ public class SupplierController {
             stmt.setString(2, password);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    System.out.println("✅ IPOS-SA authentication successful: " + username);
+                    System.out.println("IPOS-SA authentication successful: " + username);
                     return true;
                 }
             }
         } catch (SQLException e) {
-            System.err.println("❌ IPOS-SA authentication error: " + e.getMessage());
+            System.err.println("IPOS-SA authentication error: " + e.getMessage());
             if (("supplier".equals(username) && "supplier123".equals(password)) ||
                     ("merchant".equals(username) && "merchant123".equals(password))) {
                 return true;
@@ -855,6 +880,9 @@ public class SupplierController {
         loadOrders();
     }
 
+    /**
+     * Class that represents a supplier order item
+     */
     public static class OrderItem {
         public String itemId;
         public String description;
@@ -871,6 +899,9 @@ public class SupplierController {
         }
     }
 
+    /**
+     * Class that represents an IPOS-SA supplier order
+     */
     public static class Invoice {
         private final StringProperty invoiceId = new SimpleStringProperty();
         private final StringProperty orderId = new SimpleStringProperty();
@@ -894,6 +925,7 @@ public class SupplierController {
             this.status.set(status);
         }
 
+        //Getter methods for the invoice order
         public String getInvoiceId() { return invoiceId.get(); }
         public String getOrderId() { return orderId.get(); }
         public LocalDate getInvoiceDate() { return invoiceDate.get(); }

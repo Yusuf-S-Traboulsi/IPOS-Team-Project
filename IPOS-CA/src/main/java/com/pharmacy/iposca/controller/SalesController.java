@@ -19,12 +19,8 @@ import java.util.Map;
 import java.util.Random;
 
 /**
- * Sales Controller - Handles all POS transactions
+ * This class handles all POS sales transactions.
  * Supports account holders (with discounts) and walk-in customers
- * All sales logged to MySQL database
- *
- * IMPORTANT: Product prices in database are VAT-INCLUSIVE
- * Do NOT multiply by (1 + vatRate) again!
  */
 public class SalesController {
     private ObservableList<CartItem> cart = FXCollections.observableArrayList();
@@ -87,11 +83,9 @@ public class SalesController {
     }
 
     /**
-     * Process sale with full validation
-     * NOTE: Prices are already VAT-inclusive, do NOT add VAT again!
-     */
-    public String processSale(Customer c, String paymentType, String cardType,
-                              String cardFirstFour, String cardLastFour, String cardExpiry) {
+     * Method to process a sale and update inventory
+     * */
+    public String processSale(Customer c, String paymentType, String cardType, String cardFirstFour, String cardLastFour, String cardExpiry) {
         if (cart.isEmpty()) {
             return "ERROR: Cart is empty. Cannot process sale.";
         }
@@ -169,7 +163,7 @@ public class SalesController {
     }
 
     /**
-     * Validate card details
+     * Validate card details for account holders
      */
     private String validateCardDetails(String cardType, String firstFour, String lastFour, String expiry) {
         if (cardType == null || cardType.trim().isEmpty()) {
@@ -204,9 +198,6 @@ public class SalesController {
         return null;
     }
 
-    /**
-     * Log sale to database
-     */
     private void logSaleToDatabase(Customer c, double totalBeforeDiscount, double discountRate,
                                    double discountAmount, double totalAfterDiscount,
                                    double finalAmount, String paymentType) {
@@ -251,17 +242,16 @@ public class SalesController {
 
             if (rowsAffected > 0) {
                 salesLog.add(new SaleRecord(saleCounter, customerName, finalAmount, LocalDate.now(), paymentType));
-                System.out.println("✅ Sale #" + saleCounter + " logged to database");
+                System.out.println("Sale: " + saleCounter + " logged to database");
             }
         } catch (SQLException e) {
-            System.err.println("❌ Error logging sale: " + e.getMessage());
+            System.err.println("Error logging sale: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * Generate formal invoice/receipt
-     * Prices shown are VAT-inclusive (matching POS display)
+     * Generates formal file for invoices/receipts for POS sales
      */
     public File generateFormalLetter(Customer c) {
         int invoiceNum = 100000 + new Random().nextInt(900000);
@@ -287,6 +277,7 @@ public class SalesController {
         MerchantSettingsController settingsController = MerchantSettingsController.getInstance();
         com.pharmacy.iposca.model.MerchantSettings settings = settingsController.getMerchantSettings();
 
+        // HTML Header and body for the invoice
         html.append("<!DOCTYPE html>\n");
         html.append("<html>\n");
         html.append("<head>\n");
@@ -366,7 +357,7 @@ public class SalesController {
             html.append("  </div>\n");
         }
 
-        // Items Table - Show VAT-inclusive prices to match POS
+        // Items Table, show VAT-inclusive prices to match POS
         html.append("  <table>\n");
         html.append("    <thead>\n");
         html.append("      <tr>\n");
@@ -406,7 +397,7 @@ public class SalesController {
         html.append("    </tr>\n");
         html.append("  </table>\n");
 
-        // Footer Text - Use template from database
+        // Footer text, uses the template from database
         html.append("  <div class='footer-text'>\n");
         com.pharmacy.iposca.model.DocumentTemplate invoiceTemplate = settingsController.getTemplateByType("INVOICE");
         if (invoiceTemplate != null && invoiceTemplate.getFooterTemplate() != null) {
@@ -458,6 +449,7 @@ public class SalesController {
             this.product = p;
         }
 
+        //getters and setters
         public String getName() { return product.getName(); }
         public double getPrice() { return product.getPrice(); }
         public int getQuantity() { return quantity.get(); }

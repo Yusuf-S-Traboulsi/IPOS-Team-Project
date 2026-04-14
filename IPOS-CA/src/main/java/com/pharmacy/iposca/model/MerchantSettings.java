@@ -3,9 +3,8 @@ package com.pharmacy.iposca.model;
 import javafx.beans.property.*;
 
 /**
- * Merchant/Pharmacy Settings Model
- * Stores company identity information for templates
- */
+ * This class stores the merchant settings.
+ * */
 public class MerchantSettings {
 
     private final IntegerProperty id = new SimpleIntegerProperty();
@@ -21,7 +20,7 @@ public class MerchantSettings {
     private final StringProperty logoPath = new SimpleStringProperty();
     private final StringProperty registrationNumber = new SimpleStringProperty();
     private final StringProperty vatNumber = new SimpleStringProperty();
-    private final StringProperty directorName = new SimpleStringProperty("A. Petite");
+    private final StringProperty directorName = new SimpleStringProperty("Mr. Lancaster");
 
     public MerchantSettings() {
         // Default constructor

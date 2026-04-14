@@ -30,8 +30,8 @@ public class AuthenticationService {
 
     /**
      * Login with username and password
-     * @param username User's username (case-sensitive)
-     * @param password User's password (case-sensitive)
+     * @param username User's username
+     * @param password User's password
      * @return true if login successful, false otherwise
      */
     public boolean login(String username, String password) {
@@ -66,7 +66,7 @@ public class AuthenticationService {
     }
 
     /**
-     * Logout - clear the current session- No clue why no usage but it works
+     * Logout - clear the current session
      */
     public void logout() {
         System.out.println("User logged out: " + (authenticatedUser != null ? authenticatedUser.getUsername() : "Unknown"));

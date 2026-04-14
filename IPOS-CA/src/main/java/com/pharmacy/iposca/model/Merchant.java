@@ -2,6 +2,9 @@ package com.pharmacy.iposca.model;
 
 import javafx.beans.property.*;
 
+/**
+ * Class representing a merchant in the IPOS-CA system.
+ */
 public class Merchant {
     private final IntegerProperty id = new SimpleIntegerProperty();
     private final StringProperty companyName = new SimpleStringProperty();

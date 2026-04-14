@@ -7,6 +7,9 @@ import java.awt.Desktop;
 import java.io.File;
 import java.time.LocalDate;
 
+/**
+ * This UI class handles the Reporting module
+ */
 public class ReportingView {
     @FXML private DatePicker startDatePicker, endDatePicker;
     @FXML private Label statusLabel;

@@ -5,6 +5,9 @@ import com.pharmacy.iposca.model.Customer;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
+/**
+ * This UI class handles the Discount Settings module
+ */
 public class DiscountSettingsView {
 
     @FXML private ComboBox<Customer> customerCombo;
@@ -22,7 +25,7 @@ public class DiscountSettingsView {
 
     @FXML
     public void initialize() {
-        customerCombo.getItems().setAll(customerController.getCustomerData());
+        customerCombo.getItems().setAll(customerController.getCustomerData()); // Load customers from database
 
         customerCombo.setCellFactory(lv -> new ListCell<>() {
             @Override
@@ -53,7 +56,7 @@ public class DiscountSettingsView {
         planTypeCombo.getItems().addAll("NONE", "FIXED", "FLEXIBLE");
         planTypeCombo.setValue("NONE");
 
-        customerCombo.setOnAction(e -> updateCustomerInfo());
+        customerCombo.setOnAction(e -> updateCustomerInfo()); // Update info when customer changes
 
         planTypeCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
             boolean disableRate = newVal == null || newVal.equalsIgnoreCase("NONE");
@@ -69,6 +72,7 @@ public class DiscountSettingsView {
 
     private void updateCustomerInfo() {
         Customer selected = customerCombo.getValue();
+        // Updates UI for selected customer discount details
         if (selected != null) {
             String info = String.format(
                     "Current Plan: %s | Discount Rate: %.1f%% | Monthly Purchases: £%.2f | Effective Discount: %.1f%%",
@@ -126,12 +130,14 @@ public class DiscountSettingsView {
             return;
         }
 
+        // Apply discount to customer
         boolean success = customerController.setDiscountPlan(selected, planType, rate);
 
         if (success) {
             showSuccess("Discount plan applied successfully.");
             updateCustomerInfo();
         } else {
+            // Handle error
             showError("Failed to apply discount plan.");
         }
     }
@@ -144,7 +150,7 @@ public class DiscountSettingsView {
         alert.setContentText("This should be done at the start of each calendar month.");
 
         if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            customerController.resetAllMonthlyPurchaseTotals();
+            customerController.resetAllMonthlyPurchaseTotals(); // Reset all monthly totals
             showSuccess("All monthly totals reset for the new month.");
             updateCustomerInfo();
         }

@@ -14,8 +14,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Customer View - Full Database Integration
- * All TableView edits save immediately to MySQL database
+ * UI class for Customer Management
  */
 public class CustomerView {
 
@@ -35,7 +34,7 @@ public class CustomerView {
         customerTable.setEditable(true);
         titleCombo.getItems().addAll("Mr.", "Ms.", "Mrs.", "Dr.");
 
-        // --- Column Setup ---
+        //Column Setup
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
 
         statusCol.setCellValueFactory(new PropertyValueFactory<>("accountStatus"));
@@ -43,7 +42,7 @@ public class CustomerView {
         rem1Col.setCellValueFactory(new PropertyValueFactory<>("status1stReminder"));
         rem2Col.setCellValueFactory(new PropertyValueFactory<>("status2ndReminder"));
 
-        // Configure Editable String Columns (SAVE TO DATABASE ON EDIT)
+        //Configure Editable String Columns
         setupEditableStringColumn(titleCol, "title");
         setupEditableStringColumn(nameCol, "name");
         setupEditableStringColumn(emailCol, "email");
@@ -51,7 +50,7 @@ public class CustomerView {
         setupEditableStringColumn(townCol, "town");
         setupEditableStringColumn(postcodeCol, "postcode");
 
-        // Credit Limit Column (editable numeric - SAVE TO DATABASE ON EDIT)
+        //Credit Limit Column, editable column
         limitCol.setCellValueFactory(new PropertyValueFactory<>("creditLimit"));
         limitCol.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         limitCol.setOnEditCommit(e -> {
@@ -60,7 +59,7 @@ public class CustomerView {
             logic.updateCustomerField(c, "credit_limit", e.getNewValue());
         });
 
-        // --- Search Filter ---
+        //Search Filter
         FilteredList<Customer> filteredData = new FilteredList<>(logic.getCustomerData(), p -> true);
         customerSearch.textProperty().addListener((obs, oldVal, newVal) -> {
             filteredData.setPredicate(c -> {
@@ -93,9 +92,7 @@ public class CustomerView {
                 case "town": c.setTown(newValue); break;
                 case "postcode": c.setPostcode(newValue); break;
             }
-
-            // ✅ SAVE TO DATABASE
-            logic.updateCustomerField(c, property, newValue);
+            logic.updateCustomerField(c, property, newValue); //save to database
 
             customerTable.refresh();
         });
@@ -106,7 +103,7 @@ public class CustomerView {
         try {
             String title = titleCombo.getValue();
             String name = nameInput.getText();
-            String email = emailInput.getText();  // ✅ GET EMAIL - huh who knew u could use emojis
+            String email = emailInput.getText();
             String address = addressInput.getText();
             String town = townInput.getText();
             String postcode = postcodeInput.getText();
@@ -118,7 +115,7 @@ public class CustomerView {
                 return;
             }
 
-            // ✅ ADD TO DATABASE
+           //Adding customer to database
             boolean success = logic.addCustomer(title, name, email, address, town, postcode, limit);
 
             if (success) {
@@ -144,7 +141,8 @@ public class CustomerView {
     private void handleDeleteCustomer() {
         Customer selected = customerTable.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            // ✅ DELETE FROM DATABASE
+
+            //Deleting customer from database
             if (logic.deleteCustomer(selected)) {
                 customerTable.refresh();
                 informationLabel.setText("Customer deleted.");
@@ -277,7 +275,8 @@ public class CustomerView {
             if (selected.getCurrentDebt() > 0) {
                 // Record payment - reset debt and reminder statuses
                 selected.setCurrentDebt(0.0);
-                // ✅ SAVE TO DATABASE
+
+                //Update database
                 logic.updateCustomer(selected);
                 logic.resetRemindersOnPayment(selected);
                 customerTable.refresh();

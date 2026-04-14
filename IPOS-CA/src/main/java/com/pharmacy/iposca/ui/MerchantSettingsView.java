@@ -17,9 +17,8 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Merchant Settings View - Manage templates and company identity
- * Access: Manager role only
- * Includes logo upload functionality
+ * This UI class represents the Merchant Settings view.
+ * Accessible only by Manager role
  */
 public class MerchantSettingsView extends TabPane {
 
@@ -380,6 +379,9 @@ public class MerchantSettingsView extends TabPane {
         return label;
     }
 
+    /**
+     * Method to handle saving merchant settings changes
+     */
     private void handleSaveMerchantSettings() {
         MerchantSettings settings = controller.getMerchantSettings();
         settings.setCompanyName(companyNameField.getText());
@@ -428,6 +430,9 @@ public class MerchantSettingsView extends TabPane {
         }
     }
 
+    /**
+     * Shows template preview in styled dialog
+     */
     private void handlePreviewTemplate(String templateType) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Template Preview");

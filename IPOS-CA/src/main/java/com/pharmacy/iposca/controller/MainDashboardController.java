@@ -22,12 +22,12 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 /**
- * Main Dashboard Controller - Handles navigation and role-based permissions
+ * This class handles navigation and role-based permissions
  *
  * Role Permissions (Per Briefing Requirements):
  * - Admin: ONLY Admin module
  * - Manager: Everything EXCEPT Admin (including Discount Settings, Templates, Reports & Suppliers)
- * - Pharmacist: Everything EXCEPT Admin AND Reports AND Templates (including Discount Settings & Suppliers)
+ * - Pharmacist: Like Manager EXCEPT Reports and Templates
  */
 public class MainDashboardController {
 
@@ -36,8 +36,6 @@ public class MainDashboardController {
     @FXML private StackPane contentArea;
     @FXML private Label titleLabel;
     @FXML private Label userLabel;
-
-
 
     // Navigation Buttons
     @FXML private Button posBtn;
@@ -53,7 +51,6 @@ public class MainDashboardController {
     @FXML private Button onlinePortalBtn;
 
     private User currentUser;
-
 
     /**
      * Helper method for section labels in sidebar
@@ -91,7 +88,7 @@ public class MainDashboardController {
             }
 
         } else if (user.isManager()) {
-            // Manager: Everything EXCEPT Admin
+            // Manager: Everything except Admin
             navButtons.getChildren().add(createSectionLabel("OPERATIONS"));
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
@@ -111,7 +108,7 @@ public class MainDashboardController {
             }
 
         } else if (user.isPharmacist()) {
-            // Pharmacist: Everything EXCEPT Admin AND Reports AND Templates
+            // Pharmacist: Everything except Admin, Reports and Templates
             navButtons.getChildren().add(createSectionLabel("OPERATIONS"));
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
@@ -121,8 +118,6 @@ public class MainDashboardController {
             navButtons.getChildren().add(createSectionLabel("ACCOUNT HOLDERS"));
             if (customerBtn != null) navButtons.getChildren().add(customerBtn);
             if (discountBtn != null) navButtons.getChildren().add(discountBtn);
-            // NO Templates button for Pharmacist
-            // NO Reports button for Pharmacist
 
             if (titleLabel != null) {
                 titleLabel.setText("Pharmacist Dashboard");
@@ -149,7 +144,6 @@ public class MainDashboardController {
     }
 
     //nav below
-
     @FXML
     private void showPOS() {
         loadView("/com/pharmacy/iposca/POSView.fxml", "POS / Sales");
@@ -240,6 +234,9 @@ public class MainDashboardController {
         }
     }
 
+    /**
+     * Loads online portal view for authorized roles
+     */
     @FXML
     private void showOnlinePortal() {
         if (currentUser != null && (currentUser.isManager() || currentUser.isPharmacist())) {
@@ -249,6 +246,7 @@ public class MainDashboardController {
 
     @FXML
     private void handleLogout() {
+        // Switches to login view after logout
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/pharmacy/iposca/LoginView.fxml"));
             Parent root = loader.load();

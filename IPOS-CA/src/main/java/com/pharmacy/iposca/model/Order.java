@@ -2,6 +2,9 @@ package com.pharmacy.iposca.model;
 
 import javafx.beans.property.*;
 
+/**
+ * Class representing an order.
+ */
 public class Order {
     private final IntegerProperty orderId = new SimpleIntegerProperty();
     private final StringProperty status = new SimpleStringProperty();

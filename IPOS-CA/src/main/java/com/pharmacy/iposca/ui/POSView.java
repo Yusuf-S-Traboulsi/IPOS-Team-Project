@@ -19,7 +19,7 @@ import java.io.File;
 import java.time.LocalDate;
 
 /**
- * POS/Sales View - Complete with Database Integration
+ * This UI class is responsible for displaying and managing the Point-of-Sale(POS) view.
  * Handles sales for both account holders and walk-in customers
  * Opens invoice in browser after successful transaction
  */
@@ -285,7 +285,7 @@ public class POSView {
             // Refresh catalog to show updated stock
             catalog.setAll(inventoryController.getProducts());
         } else {
-            showAlert("❌ Sale Failed:\n" + result);
+            showAlert("Sale Failed:\n" + result);
             informationLabel.setText("Sale failed");
             informationLabel.setStyle("-fx-text-fill: red;");
         }
@@ -317,7 +317,7 @@ public class POSView {
     }
 
     /**
-     * Validate card details
+     * Method to validate card details
      */
     private String validateCardDetails() {
         String cardType = cardTypeField.getText();
@@ -341,7 +341,7 @@ public class POSView {
             return "Expiry must be MM/YY format";
         }
 
-        // Check expiry not in past
+        // Check expiry not in the past
         try {
             String[] parts = expiry.split("/");
             int month = Integer.parseInt(parts[0]);

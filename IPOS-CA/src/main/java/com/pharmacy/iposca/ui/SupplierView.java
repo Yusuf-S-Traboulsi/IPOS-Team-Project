@@ -3,7 +3,7 @@ package com.pharmacy.iposca.ui;
 import javafx.scene.layout.VBox;
 
 /**
- * Supplier View - IPOS-SA Ordering System
+ * This UI class handles the Supplier module.
  * Wrapper for SupplierCatalogueView
  */
 public class SupplierView extends VBox {

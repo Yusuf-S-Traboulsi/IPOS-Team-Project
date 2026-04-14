@@ -11,8 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Merchant Settings Controller - Manages templates and company identity
- * Access: Manager role only
+ * This class manages templates and company identity
+ * ONLY accessible by Manager role
  */
 public class MerchantSettingsController {
 
@@ -178,12 +178,18 @@ public class MerchantSettingsController {
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            // Binds SQL parameters based on template type
+
+            // Update existing template
             if (template.getId() > 0) {
                 stmt.setString(1, template.getSubjectTemplate());
                 stmt.setString(2, template.getBodyTemplate());
                 stmt.setString(3, template.getFooterTemplate());
                 stmt.setBoolean(4, template.isActive());
                 stmt.setInt(5, template.getId());
+                System.out.println("Template updated: " + template.getTemplateName());
+
+            // Insert new template
             } else {
                 stmt.setString(1, template.getTemplateName());
                 stmt.setString(2, template.getTemplateType());
@@ -191,6 +197,7 @@ public class MerchantSettingsController {
                 stmt.setString(4, template.getBodyTemplate());
                 stmt.setString(5, template.getFooterTemplate());
                 stmt.setBoolean(6, template.isActive());
+                System.out.println("Template added: " + template.getTemplateName());
             }
 
             int rowsAffected = stmt.executeUpdate();

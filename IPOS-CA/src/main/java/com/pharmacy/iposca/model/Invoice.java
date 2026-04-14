@@ -2,6 +2,9 @@ package com.pharmacy.iposca.model;
 
 import javafx.beans.property.*;
 
+/**
+ * Class representing an invoice for a customer.
+ */
 public class Invoice {
 
     private final StringProperty customerName = new SimpleStringProperty();

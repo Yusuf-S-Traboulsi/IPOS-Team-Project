@@ -6,33 +6,33 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Fully updated controller for IPOS-CA-Templates and Communications.
+ * This is a controller class for IPOS-CA-Templates and Communications.
  * Manages merchant identity and editable message templates.
  */
 public class NotificationController {
     private IPortalAPI portal;
 
-    // --- Merchant Identity Details ---
-    private String pharmacyName = "Your Pharmacy Name";
-    private String pharmacyAddress = "123 Pharmacy Street, London";
-    private String pharmacyEmail = "billing@yourpharmacy.com";
+    //Merchant Identity Details
+    private String pharmacyName = "CosyMed";
+    private String pharmacyAddress = "20 High ST, London";
+    private String pharmacyEmail = "cosymed@mail.com";
 
-    // --- Template Storage ---
+    //Template Storage
     private Map<String, String> templates = new HashMap<>();
 
     public NotificationController() {
-        // Default Template A: 1st Reminder (Friendly nudge)
+        // Default Template for 1st Reminder
         templates.put("REMINDER_1", "Dear {name}, this is a friendly reminder that you have an outstanding balance of £{debt}. Please settle this soon.");
 
-        // Default Template B: 2nd Reminder (Final Notice)
+        // Default Template for 2nd Reminder
         templates.put("REMINDER_2", "URGENT: {name}, your account is now IN DEFAULT. Total debt: £{debt}. Please contact {pharmacyName} at {pharmacyEmail} immediately.");
 
-        // Default Template C: Receipt/Invoice
+        // Default Template for Receipts/Invoices
         templates.put("RECEIPT", "{pharmacyName}\n{pharmacyAddress}\n------------------\nTotal Sale: £{total}\nThank you for your custom.");
     }
 
     /**
-     * Requirement: Allow Manager to edit templates.
+     * Method to update templates, Manager can edit templates.
      */
     public void updateTemplate(String key, String newContent) {
         if (templates.containsKey(key)) {
@@ -42,7 +42,7 @@ public class NotificationController {
     }
 
     /**
-     * Requirement: Update Merchant Identity details.
+     * Method to update merchant identity details.
      */
     public void updateMerchantIdentity(String name, String address, String email) {
         this.pharmacyName = name;
@@ -51,8 +51,7 @@ public class NotificationController {
     }
 
     /**
-     * Requirement: Send reminders using the IPortalAPI signature.
-     * Injects Merchant Identity and Customer data into the templates.
+     * Sends reminder email to customer when portal and template are available
      */
     public void sendReminder(Customer customer, String templateKey) {
         if (portal != null && templates.containsKey(templateKey)) {
@@ -62,7 +61,7 @@ public class NotificationController {
                     .replace("{pharmacyName}", pharmacyName)
                     .replace("{pharmacyEmail}", pharmacyEmail);
 
-            // Exactly matches: sendEmail(String, String, String) : boolean
+            //sends email and checks if it was successful
             boolean success = portal.sendEmail("customer_email_placeholder", "Account Notification", message);
 
             if (success) {
@@ -72,7 +71,7 @@ public class NotificationController {
     }
 
     /**
-     * Requirement: Generate formatted text for Receipts/Invoices.
+     * Method to generate formatted text for Receipts/Invoices.
      */
     public String generateReceiptText(double total) {
         return templates.get("RECEIPT")

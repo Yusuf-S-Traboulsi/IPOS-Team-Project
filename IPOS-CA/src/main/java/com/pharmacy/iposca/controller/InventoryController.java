@@ -9,10 +9,6 @@ import java.sql.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Inventory Controller
- * All product data is loaded from and saved to MySQL database
- */
 public class InventoryController {
 
     private static InventoryController instance;
@@ -23,7 +19,6 @@ public class InventoryController {
         loadVatRateFromDatabase();
         loadProductsFromDatabase();
     }
-
     public static synchronized InventoryController getInstance() {
         if (instance == null) {
             instance = new InventoryController();
@@ -32,7 +27,7 @@ public class InventoryController {
     }
 
     /**
-     * Load VAT rate from merchant_settings table
+     * Loads VAT rate from merchant_settings table
      */
     private void loadVatRateFromDatabase() {
         String sql = "SELECT vat_rate FROM merchant_settings LIMIT 1";
@@ -46,7 +41,7 @@ public class InventoryController {
                     this.currentVatRate = dbVatRate;
                 }
             }
-            System.out.println("✅ VAT Rate loaded: " + (currentVatRate * 100) + "%");
+            System.out.println("VAT rate loaded: " + (currentVatRate * 100) + "%");
         } catch (SQLException e) {
             System.err.println("Could not load VAT rate from database, using default 20%");
         }
@@ -65,7 +60,7 @@ public class InventoryController {
 
             if (rows > 0) {
                 this.currentVatRate = rate;
-                System.out.println("✅ VAT Rate saved to database: " + (rate * 100) + "%");
+                System.out.println("VAT rate saved to database: " + (rate * 100) + "%");
             }
         } catch (SQLException e) {
             System.err.println("Error saving VAT rate: " + e.getMessage());
@@ -73,7 +68,7 @@ public class InventoryController {
     }
 
     /**
-     * Load all products from MySQL database on startup
+     * This method loads all products from database on startup
      */
     private void loadProductsFromDatabase() {
         String sql = "SELECT id, name, bulk_cost, markup_rate, price, stock, low_stock_threshold, supplier_item_id FROM products";
@@ -96,7 +91,7 @@ public class InventoryController {
                 masterInventory.add(product);
             }
 
-            System.out.println("✅ Loaded " + masterInventory.size() + " products from database");
+            System.out.println("Loaded " + masterInventory.size() + " products from database");
         } catch (SQLException e) {
             System.err.println("Error loading products from database: " + e.getMessage());
             e.printStackTrace();
@@ -116,7 +111,7 @@ public class InventoryController {
     }
 
     /**
-     * ADD product AND save to database
+     * Method to add product and save it to database
      */
     public boolean addProduct(int id, String name, double bulkCost, double markup, int stock, int threshold) {
         for (Product p : masterInventory) {
@@ -156,7 +151,7 @@ public class InventoryController {
     }
 
     /**
-     * UPDATE entire product AND save to database
+     * Method to update entire product and save to database
      */
     public boolean updateProduct(Product product) {
         if (product == null) return false;
@@ -189,7 +184,7 @@ public class InventoryController {
     }
 
     /**
-     * UPDATE specific field AND save to database (For TableView cell edits)
+     * Method to update the product field and save it to database (for TableView edits)
      */
     public boolean updateProductField(int productId, String fieldName, Object newValue) {
         String sql = "UPDATE products SET " + fieldName + " = ? WHERE id = ?";
@@ -235,7 +230,7 @@ public class InventoryController {
     }
 
     /**
-     * DELETE product from database
+     * Method to delete product from database
      */
     public boolean deleteProduct(Product p) {
         if (p == null) return false;
@@ -266,7 +261,7 @@ public class InventoryController {
     }
 
     /**
-     * Decrement stock in database AND local cache (For sales)
+     * Decrements stock in database AND local cache for when a sale happens
      */
     public boolean decrementLocalStock(int itemID, int quantity) {
         String sql = "UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?";
@@ -299,7 +294,7 @@ public class InventoryController {
     }
 
     /**
-     * Log stock change to database (audit trail)
+     * Method to log stock change to the database
      */
     private void logStockChange(int productId, int changeAmount, String reason, int userId) {
         String sql = "INSERT INTO stock_changes (product_id, change_amount, reason, user_id) VALUES (?, ?, ?, ?)";
@@ -316,12 +311,18 @@ public class InventoryController {
         }
     }
 
+    /**
+     * Gets products below low stock threshold
+     */
     public List<Product> getLowStockItems() {
         return masterInventory.stream()
                 .filter(p -> p.getStock() <= p.getLowStockThreshold())
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Method to calculate recommended order quantity based on low stock threshold
+     */
     public int calculateRecommendedOrder(Product p) {
         int targetStock = (int) Math.ceil(p.getLowStockThreshold() * 1.10);
         int recommended = targetStock - p.getStock();
@@ -329,13 +330,12 @@ public class InventoryController {
     }
 
     /**
-     * Calculate retail price with VAT (prices stored in DB are VAT-inclusive)
+     * Calculate retail price with VAT
      */
     public double calculateRetailPrice(Product p) {
         double priceBeforeVat = p.getBulkCost() * (1 + p.getMarkupRate());
         return priceBeforeVat * (1 + currentVatRate);
     }
-
     public void refreshAllPrices() {
         for (Product p : masterInventory) {
             p.setPrice(calculateRetailPrice(p));

@@ -4,9 +4,8 @@ import javafx.beans.property.*;
 import java.time.LocalDate;
 
 /**
- * Supplier Order Model - Represents orders placed with IPOS-SA
- * Matches Briefing Section 9.4 Merchant's Orders Summary
- */
+ * Class for representing a supplier order.
+ * */
 public class SupplierOrder {
 
     private final StringProperty orderId = new SimpleStringProperty();
