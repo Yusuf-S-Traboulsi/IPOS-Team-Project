@@ -22,8 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Inventory View - Full Database Integration
- * All TableView edits save immediately to MySQL database
+ * This class is responsible for displaying and managing the inventory view.
  */
 public class InventoryView {
 
@@ -40,7 +39,7 @@ public class InventoryView {
     public void initialize() {
         inventoryTable.setEditable(true);
 
-        // --- VAT Listener ---
+        //VAT Listener
         vatField.setText(String.valueOf(logic.getVatRate()));
         vatField.textProperty().addListener((obs, old, newVal) -> {
             try {
@@ -76,7 +75,7 @@ public class InventoryView {
             p.setBulkCost(newBulkCost);
             // Recalculate price based on new bulk cost
             p.setPrice(logic.calculateRetailPrice(p));
-            // Save both bulk cost AND updated price to database
+            // Save both bulk cost and updated price to database
             logic.updateProductField(p.getId(), "bulk_cost", newBulkCost);
             logic.updateProductField(p.getId(), "price", p.getPrice());
             inventoryTable.refresh();
@@ -84,7 +83,7 @@ public class InventoryView {
             informationLabel.setStyle("-fx-text-fill: green;");
         });
 
-        // Stock Column (editable - SAVES TO DATABASE)
+        // Stock Column, editable
         stockCol.setCellValueFactory(new PropertyValueFactory<>("stock"));
         stockCol.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
         stockCol.setOnEditCommit(e -> {
@@ -97,7 +96,7 @@ public class InventoryView {
             informationLabel.setStyle("-fx-text-fill: green;");
         });
 
-        // Threshold Column (editable - SAVES TO DATABASE)
+        // Threshold Column, editable
         thresholdCol.setCellValueFactory(new PropertyValueFactory<>("lowStockThreshold"));
         thresholdCol.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
         thresholdCol.setOnEditCommit(e -> {
@@ -110,7 +109,7 @@ public class InventoryView {
             informationLabel.setStyle("-fx-text-fill: green;");
         });
 
-        // Markup Column (editable - SAVES TO DATABASE)
+        // Markup Column, editable
         markupCol.setCellValueFactory(new PropertyValueFactory<>("markupRate"));
         markupCol.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
         markupCol.setOnEditCommit(e -> {
@@ -125,7 +124,7 @@ public class InventoryView {
             informationLabel.setStyle("-fx-text-fill: green;");
         });
 
-        // Price Column (editable - SAVES TO DATABASE)
+        // Price Column, editable
         setupPriceColumn();
 
         //Search and Styling
@@ -133,15 +132,16 @@ public class InventoryView {
     }
 
     private void setupPriceColumn() {
+        //Converting currency to string and back to double
         DoubleStringConverter currencyConverter = new DoubleStringConverter() {
             @Override
             public String toString(Double value) {
-                return (value == null) ? "£0.00" : String.format("£%.2f", value);
+                return (value == null) ? "£0.00" : String.format("£%.2f", value); //Adds pound sign and two decimal places
             }
             @Override
             public Double fromString(String value) {
                 try {
-                    return super.fromString(value.replace("£", "").trim());
+                    return super.fromString(value.replace("£", "").trim()); //Removes pound sign and parses as double
                 } catch (Exception e) { return 0.0; }
             }
         };
@@ -159,6 +159,9 @@ public class InventoryView {
         });
     }
 
+    /**
+     * Sets up live search filtering and low-stock styling
+     */
     private void setupSearchAndStyle() {
         FilteredList<Product> filteredData = new FilteredList<>(logic.getProducts(), p -> true);
         searchField.textProperty().addListener((obs, old, newVal) -> {
@@ -181,31 +184,43 @@ public class InventoryView {
         });
     }
 
+    /**
+     * This method handles the "Add Product" button click event.
+     */
     @FXML
     private void handleAddProduct() {
         Alert alert = new Alert(Alert.AlertType.NONE);
         alert.setTitle("Add New Product");
         alert.setHeaderText("Enter product details");
 
+        // Create a dialog pane and set content
         DialogPane dialogPane = alert.getDialogPane();
 
-        TextField idField = new TextField();
+        TextField idField = new TextField(); // Add ID field
         idField.setPromptText("Product ID");
-        TextField nameField = new TextField();
+
+        TextField nameField = new TextField(); // Add product name field
         nameField.setPromptText("Product Name");
-        TextField bulkCostField = new TextField();
+
+        TextField bulkCostField = new TextField(); // Add bulk cost field
         bulkCostField.setPromptText("Bulk Cost");
-        TextField markupField = new TextField();
+
+        TextField markupField = new TextField(); // Add markup rate field
         markupField.setPromptText("Markup Rate");
-        TextField stockField = new TextField();
+
+        TextField stockField = new TextField(); // Add initial stock field
         stockField.setPromptText("Initial Stock");
-        TextField thresholdField = new TextField();
+
+        TextField thresholdField = new TextField(); // Add input field for the low-stock warning threshold
         thresholdField.setPromptText("Low Stock Threshold");
 
+        //Place fields in the dialog pane
         dialogPane.setContent(new VBox(10, idField, nameField, bulkCostField, markupField, stockField, thresholdField));
-        alert.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        alert.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL); //Adding OK and Cancel buttons to the dialog
 
+        //Continue with the dialog only if the user clicks OK
         if (alert.showAndWait().get() == ButtonType.OK) {
+            // Validate input fields and conver entered values
             try {
                 int id = Integer.parseInt(idField.getText());
                 String name = nameField.getText();
@@ -266,10 +281,12 @@ public class InventoryView {
 
     @FXML
     private void generateLowStockReport() {
+        //Get all products with low stock
         List<Product> items = logic.getLowStockItems();
         String generatedBy = "Unknown User";
         String userRole = "";
 
+        //Gets the current user's username and role
         try {
             AuthenticationService authService = AuthenticationService.getCurrentInstance();
             if (authService != null && authService.getCurrentUser() != null) {
@@ -279,11 +296,13 @@ public class InventoryView {
             }
         } catch (Exception e) { /* Fallback */ }
 
+        //Generate the HTML report
         File reportFile = new File("LowStockReport_" +
                 LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
 
         StringBuilder html = new StringBuilder();
 
+        //HTML header and body
         html.append("<!DOCTYPE html>\n<html lang='en'>\n<head>\n<meta charset='UTF-8'>\n");
         html.append("<style>\n");
         html.append("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #2c3e50; line-height: 1.6; }\n");
@@ -303,9 +322,11 @@ public class InventoryView {
         html.append("<p>Generated: ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")))
                 .append(" | By: ").append(generatedBy).append(userRole).append("</p>\n");
 
+        //Calculate summary statistics for the report
         long criticalCount = items.stream().filter(p -> p.getStock() <= p.getLowStockThreshold() * 0.5).count();
         int totalUnitsToOrder = items.stream().mapToInt(p -> logic.calculateRecommendedOrder(p)).sum();
 
+        //Adds the summary table to the report
         html.append("<div class='summary-box'>\n");
         html.append("<h3>Summary</h3>\n");
         html.append("<table>\n");
@@ -315,11 +336,12 @@ public class InventoryView {
         html.append("</table>\n");
         html.append("</div>\n");
 
+        //table of low stock items
         html.append("<h3>Stock Details</h3>\n");
         html.append("<table>\n");
         html.append("<tr><th>Item ID</th><th>Description</th><th>Current Stock</th><th>Min Threshold</th><th>Recommended Order</th></tr>\n");
 
-        for (Product p : items) {
+        for (Product p : items) { //for each item with low stock to be updated into the table
             int recommendedOrder = logic.calculateRecommendedOrder(p);
             String status = p.getStock() <= p.getLowStockThreshold() * 0.5 ? "CRITICAL" : "LOW";
 
@@ -333,6 +355,7 @@ public class InventoryView {
         }
         html.append("</table>\n");
 
+        //Footer information
         html.append("<hr>\n");
         html.append("<p>Generated: ").append(LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm"))).append("</p>\n");
@@ -342,7 +365,7 @@ public class InventoryView {
 
         try (PrintWriter out = new PrintWriter(reportFile, StandardCharsets.UTF_8)) {
             out.println(html.toString());
-            System.out.println("✅ Report generated: " + reportFile.getAbsolutePath());
+            System.out.println("Report generated: " + reportFile.getAbsolutePath());
 
             if (java.awt.Desktop.isDesktopSupported()) {
                 java.awt.Desktop.getDesktop().browse(reportFile.toURI());
