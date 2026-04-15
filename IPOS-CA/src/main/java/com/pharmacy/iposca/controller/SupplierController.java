@@ -77,7 +77,7 @@ public class SupplierController {
 
             orders.clear();
 
-            // Loads orders from database into orders list
+            //Loads orders from database into orders list
             while (rs.next()) {
                 SupplierOrder order = new SupplierOrder(
                         rs.getString("order_id"),
@@ -249,11 +249,13 @@ public class SupplierController {
         return invoices;
     }
 
+   
+    //Delivery & Payment Methods
     public boolean markOrderAsDelivered(String orderId) {
         System.out.println("Marking order " + orderId + " as delivered");
         String sql = "UPDATE supplier_orders SET status = 'Delivered', delivered_date = ? WHERE order_id = ?";
 
-        // Updates order status to delivered
+        //Updates order status to delivered
         try (Connection conn = DatabaseConnector.getSAConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -486,8 +488,8 @@ public class SupplierController {
         html.append("      <th>Item ID</th>\n");
         html.append("      <th>Description</th>\n");
         html.append("      <th>Quantity</th>\n");
-        html.append("      <th>Unit Cost, £</th>\n");
-        html.append("      <th>Total, £</th>\n");
+        html.append("      <th>Unit Cost, £</th>\n"); 
+        html.append("      <th>Total, £</th>\n"); 
         html.append("    </tr>\n");
         html.append("  </thead>\n");
         html.append("  <tbody>\n");
@@ -556,7 +558,7 @@ public class SupplierController {
         html.append("<!DOCTYPE html>\n");
         html.append("<html lang='en'>\n");
         html.append("<head>\n");
-        html.append("  <meta charset='UTF-8'>\n");
+        html.append("  <meta charset='UTF-8'>\n"); 
         html.append("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
         html.append("  <title>Orders Summary Report</title>\n");
         html.append("  <style>\n");

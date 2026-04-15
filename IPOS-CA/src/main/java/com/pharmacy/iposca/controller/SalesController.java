@@ -249,7 +249,6 @@ public class SalesController {
 
         LocalDate now = LocalDate.now();
         String dateStr = now.format(DateTimeFormatter.ofPattern("d MMMM yyyy"));
-
         String customerLastName = "Customer";
         String customerTitle = "Mr.";
         if (c != null) {

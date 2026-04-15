@@ -75,7 +75,6 @@ public class DatabaseConnector {
     }
 
     //Test methods
-
     private static void testSADatabase() {
         try {
             Connection conn = getSAConnection();

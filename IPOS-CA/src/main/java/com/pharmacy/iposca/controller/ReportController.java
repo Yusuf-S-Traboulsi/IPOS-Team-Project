@@ -144,6 +144,7 @@ public class ReportController {
         double openingDebt = customers.getCustomerData().stream()
                 .mapToDouble(Customer::getCurrentDebt).sum();
 
+        // For prototype: simulate payments (in production, track actual payments)
         double paymentsReceived = 0;
         double closingDebt = openingDebt - paymentsReceived;
 

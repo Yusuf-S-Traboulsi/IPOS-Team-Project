@@ -83,7 +83,7 @@ public class SupplierLoginView extends VBox {
     }
 
     /**
-     * Handle login authentication
+     * Handle login authentication against MySQL database
      */
     private void handleLogin() {
         String username = usernameField.getText().trim();

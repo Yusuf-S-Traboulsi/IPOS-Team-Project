@@ -52,7 +52,7 @@ public class PUCommunicationController {
                     fullAddress += ", " + postcode;
                 }
 
-                // Maps customer_type (ENUM) to a readable name for the UI
+                // Maps customer_type to a readable name for the UI
                 String customerDisplay = rs.getString("customer_type");
                 if ("NON_COMMERCIAL".equals(customerDisplay)) {
                     customerDisplay = "Non-Commercial (ID: " + rs.getInt("customer_id") + ")";
@@ -112,8 +112,8 @@ public class PUCommunicationController {
      */
     public boolean markAsDelivered(int orderId) {
         String tracking = "TRK-" + System.currentTimeMillis();
-
-        // First update status to Delivered
+      
+        // First updates status to Delivered
         if (updateOrderStatus(orderId, "Delivered")) {
             // Then update tracking
             String sqlTrack = "UPDATE online_sales SET tracking_link = ? WHERE id = ?";

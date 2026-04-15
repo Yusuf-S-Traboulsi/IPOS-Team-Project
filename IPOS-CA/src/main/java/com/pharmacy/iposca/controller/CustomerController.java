@@ -567,8 +567,8 @@ public class CustomerController {
         html.append("</style>\n</head>\n<body>\n");
         html.append("<div class='reminder-container'>\n");
         html.append("<h1>2ND AND FINAL PAYMENT REMINDER</h1>\n");
-        html.append("<div class='urgent'>URGENT: Final notice before account suspension</div>\n");
-        html.append("<div class='warning'>Your account will be suspended if payment is not received</div>\n");
+        html.append("<div class='urgent'>⚠️ URGENT: Final notice before account suspension</div>\n");
+        html.append("<div class='warning'>⚠️ Your account will be suspended if payment is not received</div>\n");
         html.append("<div class='info-section'>\n");
         html.append("<p><strong>Invoice No.:</strong> ").append(invoiceNum).append("</p>\n");
         html.append("<p><strong>Client:</strong> ").append(customer.getTitle()).append(" ").append(customer.getName()).append("</p>\n");

@@ -116,7 +116,7 @@ public class MainDashboardController {
     }
 
     /**
-     * Load a view into the content area
+     * Load a view into the content area safely
      */
     private void loadView(String fxmlPath, String title) {
         try {
@@ -137,7 +137,7 @@ public class MainDashboardController {
         }
     }
 
-    // Navigation Handlers
+    //Navigation Handlers
     @FXML
     private void showPOS() {
         loadView("/com/pharmacy/iposca/POSView.fxml", "POS / Sales");
@@ -160,7 +160,7 @@ public class MainDashboardController {
 
     @FXML
     private void showReports() {
-        // Check if the user has manager permissions
+        //Check if the user has manager permissions
         if (currentUser != null && currentUser.isManager()) {
             loadView("/com/pharmacy/iposca/ReportingView.fxml", "Reports");
         } else {
@@ -170,7 +170,7 @@ public class MainDashboardController {
 
     @FXML
     private void showDiscountSettings() {
-        // Check if the user has manager or pharmacist permissions
+        //Checks if the user has manager or pharmacist permissions
         if (currentUser != null && (currentUser.isManager() || currentUser.isPharmacist())) {
             loadView("/com/pharmacy/iposca/discount_settings.fxml", "Discount Settings");
         } else {
@@ -180,7 +180,7 @@ public class MainDashboardController {
 
     @FXML
     private void showTemplates() {
-        // Check if the user has manager permissions
+        //Checks if the user has manager permissions
         if (currentUser != null && currentUser.isManager()) {
             try {
                 MerchantSettingsView templatesView = new MerchantSettingsView();

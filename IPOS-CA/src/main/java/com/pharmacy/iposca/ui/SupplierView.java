@@ -13,5 +13,4 @@ public class SupplierView extends VBox {
         SupplierCatalogueView catalogueView = new SupplierCatalogueView();
         getChildren().add(catalogueView);
     }
-
 }

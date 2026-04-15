@@ -5,7 +5,7 @@
 
 <TabPane xmlns="http://javafx.com/javafx/17.0.12"
          xmlns:fx="http://javafx.com/fxml/1"
-         fx:controller="com.pharmacy.iposca.ui.SupplierView"
+         fx:controller="com.pharmacy.iposca.ui.SupplierCatalogueView"
          prefHeight="700.0" prefWidth="1000.0"
          tabClosingPolicy="UNAVAILABLE">
 
@@ -152,13 +152,10 @@
 
             <!-- Action Buttons -->
             <HBox spacing="10" alignment="CENTER_LEFT">
-                <Button text="Refresh Orders" onAction="#refreshOrders"
+                <Button text="Refresh Balance" onAction="#refreshOrders"
                         style="-fx-background-color: #3498db; -fx-text-fill: white;"/>
-
-                <!-- ✅ ADD THIS: Mark as Paid Button -->
                 <Button text="Mark as Paid" onAction="#markSelectedAsPaid"
                         style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
-
                 <Button text="Orders Summary Report" onAction="#generateOrdersSummaryReport"
                         style="-fx-background-color: #9b59b6; -fx-text-fill: white;"/>
                 <Button text="Detailed Order Report" onAction="#generateDetailedOrderReport"
