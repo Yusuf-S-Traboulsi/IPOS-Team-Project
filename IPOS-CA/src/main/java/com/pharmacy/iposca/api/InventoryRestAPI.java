@@ -1,303 +1,152 @@
 package com.pharmacy.iposca.api;
-
 import com.google.gson.*;
 import com.pharmacy.iposca.db.DatabaseConnector;
-import spark.*;
-
+import spark.Spark;
 import java.sql.*;
 import java.time.LocalDate;
 
-/**
- * IPOS-CA Inventory REST API
- * Runs on port 4567
- * Uses ipos_ca database
- */
 public class InventoryRestAPI {
-
-    private static final String API_KEY =
-            System.getenv("IPOS_CA_API_KEY") != null
-                    ? System.getenv("IPOS_CA_API_KEY")
-                    : "ipos-ca-secret-key-2026";
-
     private static final Gson gson = new Gson();
 
     public static void start(int port) {
-        // ⚠️ MUST BE FIRST - Set port BEFORE any routes
         Spark.port(port);
 
-        // Handle CORS preflight (OPTIONS requests)
         Spark.options("/*", (req, res) -> {
             res.header("Access-Control-Allow-Origin", "*");
             res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            res.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
-            return "";
+            res.header("Access-Control-Allow-Headers", "Content-Type");
+            return " ";
         });
 
-        // API Key Authentication (skip for health check and OPTIONS)
-        Spark.before((request, response) -> {
-            if (request.pathInfo().equals("/api/health")) {
-                return;
-            }
-            if (request.requestMethod().equalsIgnoreCase("OPTIONS")) {
-                return;
-            }
-            String apiKey = request.headers("X-API-Key");
-            if (apiKey == null || !apiKey.equals(API_KEY)) {
-                response.header("Access-Control-Allow-Origin", "*");
-                Spark.halt(401, "{\"success\": false, \"error\": \"Unauthorized - Invalid API Key\"}");
-            }
-        });
-
-        // CORS Headers on ALL responses (including errors)
         Spark.after((request, response) -> {
             response.header("Access-Control-Allow-Origin", "*");
-            response.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            response.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
+            response.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            response.header("Access-Control-Allow-Headers", "Content-Type");
         });
 
-        // Health Check
         Spark.get("/api/health", (req, res) -> {
             res.type("application/json");
-            return "{\"status\": \"ok\", \"system\": \"IPOS-CA\", \"timestamp\": \"" + LocalDate.now() + "\"}";
+            return "{\"status\": \"ok\", \"system\": \"IPOS-CA\"}";
         });
 
-        // Get Products
         Spark.get("/api/products", (req, res) -> {
             res.type("application/json");
-            return getProducts();
+            return executeQuery("SELECT id, name, price, stock, supplier_item_id FROM products ORDER BY name");
         });
 
-        // Get Single Product
-        Spark.get("/api/products/:id", (req, res) -> {
-            res.type("application/json");
-            return getProductById(req.params(":id"));
-        });
-
-        // Update Stock (Direct)
-        Spark.put("/api/products/:id/stock", (req, res) -> {
-            res.type("application/json");
-            return updateStock(req.params(":id"), req.body());
-        });
-
-        // ✅ NEW: Decrement Stock (for IPOS-PU team)
         Spark.post("/api/inventory/decrement", (req, res) -> {
             res.type("application/json");
             return decrementStock(req.body());
         });
 
-        // ✅ NEW: Get Stock Level
-        Spark.get("/api/inventory/stock/:productId", (req, res) -> {
-            res.type("application/json");
-            return getStockLevel(req.params(":productId"));
-        });
-
-        System.out.println("🚀 IPOS-CA Inventory REST API Started on port " + port);
-        System.out.println("   Base URL: http://localhost:" + port + "/api");
-        System.out.println("   Auth: Enabled (API Key required)");
+        System.out.println("IPOS-CA Inventory API Started on http://localhost:" + port);
+        System.out.println("Endpoint: POST /api/inventory/decrement");
+        System.out.println("Auth: DISABLED (Local Demo Mode)");
+        System.out.println("Mapping: Uses supplier_item_id to find products");
     }
 
-    private static String getProducts() {
-        return executeQuery("SELECT * FROM products ORDER BY name");
-    }
 
-    private static String getProductById(String productId) {
-        return executeQuery("SELECT * FROM products WHERE id = ?", productId);
-    }
-
-    private static String updateStock(String productId, String jsonBody) {
-        try {
-            JsonObject data = JsonParser.parseString(jsonBody).getAsJsonObject();
-            int newStock = data.get("stock").getAsInt();
-            String reason = data.has("reason") ? data.get("reason").getAsString() : "Manual update";
-
-            String sql = "UPDATE products SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-            int rows = executeUpdate(sql, newStock, productId);
-
-            // Log stock change
-            if (rows > 0) {
-                logStockChange(Integer.parseInt(productId), newStock, reason, null);
-            }
-
-            JsonObject response = new JsonObject();
-            response.addProperty("success", rows > 0);
-            response.addProperty("message", rows > 0 ? "Stock updated" : "Product not found");
-            return gson.toJson(response);
-
-        } catch (Exception e) {
-            JsonObject error = new JsonObject();
-            error.addProperty("success", false);
-            error.addProperty("error", e.getMessage());
-            return gson.toJson(error);
-        }
-    }
-
-    // ✅ NEW METHOD: Decrement Stock for IPOS-PU
     private static String decrementStock(String jsonBody) {
         try {
             JsonObject data = JsonParser.parseString(jsonBody).getAsJsonObject();
 
-            // Validate required fields
             if (!data.has("productId") || !data.has("quantity")) {
-                JsonObject error = new JsonObject();
-                error.addProperty("success", false);
-                error.addProperty("error", "Missing required fields: productId, quantity");
-                return gson.toJson(error);
+                return createError("Missing required fields: productId, quantity");
             }
 
-            int productId = data.get("productId").getAsInt();  // ✅ Get as int
+            String supplierItemId = String.valueOf(data.get("productId").getAsInt());
             int quantity = data.get("quantity").getAsInt();
-            String saleId = data.has("saleId") ? data.get("saleId").getAsString() : null;
+            String saleId = data.has("saleId") ? data.get("saleId").getAsString() : "UNKNOWN";
             String reason = data.has("reason") ? data.get("reason").getAsString() : "POS Sale";
 
-            // Validate quantity
-            if (quantity <= 0) {
-                JsonObject error = new JsonObject();
-                error.addProperty("success", false);
-                error.addProperty("error", "Quantity must be positive");
-                return gson.toJson(error);
-            }
+            System.out.println(" [API] Received Request: SupplierID=" + supplierItemId + ", Qty=" + quantity);
 
-            // Check current stock
-            String checkSql = "SELECT stock, name FROM products WHERE id = ?";
+            String lookupSql = "SELECT id, name, stock FROM products WHERE supplier_item_id = ?";
+            int internalId = -1;
+            String productName = " ";
+            int currentStock = 0;
+
             try (Connection conn = DatabaseConnector.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(checkSql)) {
+                 PreparedStatement stmt = conn.prepareStatement(lookupSql)) {
 
-                stmt.setInt(1, productId);  // ✅ Set as int
+                stmt.setString(1, supplierItemId);
                 ResultSet rs = stmt.executeQuery();
 
                 if (!rs.next()) {
-                    JsonObject error = new JsonObject();
-                    error.addProperty("success", false);
-                    error.addProperty("error", "Product not found");
-                    error.addProperty("productId", productId);
-                    return gson.toJson(error);
+                    System.err.println("[API] Product with SupplierID " + supplierItemId + " NOT FOUND!");
+                    return createError("Product not found (Supplier ID: " + supplierItemId + ")");
                 }
 
-                int currentStock = rs.getInt("stock");
-                String productName = rs.getString("name");
+                internalId = rs.getInt("id");
+                productName = rs.getString("name");
+                currentStock = rs.getInt("stock");
 
-                // Check if sufficient stock
-                if (currentStock < quantity) {
-                    JsonObject error = new JsonObject();
-                    error.addProperty("success", false);
-                    error.addProperty("error", "Insufficient stock");
-                    error.addProperty("currentStock", currentStock);
-                    error.addProperty("requestedQuantity", quantity);
-                    error.addProperty("productId", productId);
-                    error.addProperty("productName", productName);
-                    return gson.toJson(error);
-                }
+                System.out.println("[API] Mapped SupplierID " + supplierItemId + " -> Internal ID " + internalId);
             }
 
-            // Decrement stock
-            String updateSql = "UPDATE products SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-            int rows = executeUpdate(updateSql, quantity, productId);  // ✅ productId is int
-
-            if (rows > 0) {
-                // ✅ Log stock change with correct parameter types
-                logStockChange(productId, -quantity, reason, saleId);
-
-                JsonObject response = new JsonObject();
-                response.addProperty("success", true);
-                response.addProperty("message", "Stock decremented successfully");
-                response.addProperty("productId", productId);
-                response.addProperty("quantityDecrement", quantity);
-                response.addProperty("saleId", saleId != null ? saleId : "N/A");
-                return gson.toJson(response);
-            } else {
+            if (currentStock < quantity) {
+                System.err.println(" [API] Insufficient Stock: Have " + currentStock + ", Need " + quantity);
                 JsonObject error = new JsonObject();
                 error.addProperty("success", false);
-                error.addProperty("error", "Failed to update stock");
+                error.addProperty("error", "Insufficient stock");
+                error.addProperty("currentStock", currentStock);
+                error.addProperty("requestedQuantity", quantity);
                 return gson.toJson(error);
             }
 
-        } catch (Exception e) {
-            JsonObject error = new JsonObject();
-            error.addProperty("success", false);
-            error.addProperty("error", e.getMessage());
-            e.printStackTrace();
-            return gson.toJson(error);
-        }
-    }
-
-    // ✅ NEW METHOD: Get Stock Level
-    private static String getStockLevel(String productId) {
-        try {
-            String sql = "SELECT id, name, stock, low_stock_threshold FROM products WHERE id = ?";
+            String updateSql = "UPDATE products SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
             try (Connection conn = DatabaseConnector.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                 PreparedStatement stmt = conn.prepareStatement(updateSql)) {
 
-                stmt.setInt(1, Integer.parseInt(productId));
-                ResultSet rs = stmt.executeQuery();
+                stmt.setInt(1, quantity) ;
+                stmt.setInt(2, internalId);
 
-                if (rs.next()) {
+                int rowsAffected = stmt.executeUpdate();
+
+                if (rowsAffected > 0) {
+                    logStockChange(internalId, -quantity, reason, saleId);
                     JsonObject response = new JsonObject();
                     response.addProperty("success", true);
-                    response.addProperty("productId", rs.getInt("id"));
-                    response.addProperty("productName", rs.getString("name"));
-                    response.addProperty("stockLevel", rs.getInt("stock"));
-                    response.addProperty("lowStockThreshold", rs.getInt("low_stock_threshold"));
-                    response.addProperty("isLowStock", rs.getInt("stock") < rs.getInt("low_stock_threshold"));
+                    response.addProperty("message", "Stock decremented successfully");
+                    response.addProperty("productId", internalId);
+                    response.addProperty("quantityDecrement", quantity);
                     return gson.toJson(response);
                 } else {
-                    JsonObject error = new JsonObject();
-                    error.addProperty("success", false);
-                    error.addProperty("error", "Product not found");
-                    return gson.toJson(error);
+                    return createError("Failed to update stock (0 rows affected)");
                 }
             }
+
         } catch (Exception e) {
-            JsonObject error = new JsonObject();
-            error.addProperty("success", false);
-            error.addProperty("error", e.getMessage());
-            return gson.toJson(error);
+            e.printStackTrace();
+            return createError(e.getMessage());
         }
     }
 
-    // ✅ Helper method to log stock changes - CORRECT SIGNATURE
-    private static void logStockChange(int productId, int changeAmount, String reason, String saleId) {
+    private static void logStockChange(int pid, int change, String reason, String saleId) {
         String sql = "INSERT INTO stock_changes (product_id, change_amount, reason, sale_id, change_date) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, productId);       // ✅ int
-            stmt.setInt(2, changeAmount);    // ✅ int
-            stmt.setString(3, reason);       // ✅ String
-            stmt.setString(4, saleId);       // ✅ String (can be null)
+            stmt.setInt(1, pid);
+            stmt.setInt(2,  change);
+            stmt.setString(3, reason);
+            stmt.setString(4, saleId);
             stmt.executeUpdate();
-
-            System.out.println("Stock change logged: Product " + productId + ", Change: " + changeAmount + ", Reason: " + reason);
-
+            System.out.println("Stock change logged: Product " + pid + ", Change: " + change);
         } catch (SQLException e) {
-            System.err.println("Failed to log stock change: " + e.getMessage());
+            System.err.println("Log failed: " + e.getMessage());
         }
     }
 
-    private static String executeQuery(String sql, Object... params) {
+    private static String executeQuery(String sql) {
         JsonArray result = new JsonArray();
         try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            for (int i = 0; i < params.length; i++) {
-                stmt.setObject(i + 1, params[i]);
-            }
-
-            ResultSet rs = stmt.executeQuery();
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            ResultSetMetaData meta = rs.getMetaData();
             while (rs.next()) {
                 JsonObject row = new JsonObject();
-                for (int i = 1; i <= columnCount; i++) {
-                    String columnName = metaData.getColumnName(i);
-                    Object value = rs.getObject(i);
-                    if (value instanceof Date) {
-                        row.addProperty(columnName, ((Date) value).toLocalDate().toString());
-                    } else if (value instanceof Timestamp) {
-                        row.addProperty(columnName, ((Timestamp) value).toLocalDateTime().toString());
-                    } else if (value != null) {
-                        row.addProperty(columnName, value.toString());
-                    }
+                for (int i = 1; i <= meta.getColumnCount(); i++) {
+                    row.addProperty(meta.getColumnName(i), rs.getString(i));
                 }
                 result.add(row);
             }
@@ -307,18 +156,10 @@ public class InventoryRestAPI {
         return gson.toJson(result);
     }
 
-    private static int executeUpdate(String sql, Object... params) {
-        try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            for (int i = 0; i < params.length; i++) {
-                stmt.setObject(i + 1, params[i]);
-            }
-
-            return stmt.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return 0;
-        }
+    private static String createError(String msg) {
+        JsonObject err = new JsonObject();
+        err.addProperty("success", false);
+        err.addProperty("error", msg);
+        return gson.toJson(err);
     }
 }

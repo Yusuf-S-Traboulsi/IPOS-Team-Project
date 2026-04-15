@@ -1,5 +1,4 @@
 package com.pharmacy.iposca.ui;
-
 import com.pharmacy.iposca.controller.PUCommunicationController;
 import com.pharmacy.iposca.model.OnlineOrder;
 import javafx.collections.FXCollections;
@@ -8,24 +7,22 @@ import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-
 import java.time.format.DateTimeFormatter;
 
 /**
- * This UI class handles the Portal Orders module
+ This UI class handles the Portal Orders module
  */
 public class PortalOrdersView {
-
     @FXML private TableView<OnlineOrder> ordersTable;
-    @FXML private TableColumn<OnlineOrder, Integer> colId;
+    @FXML private TableColumn<OnlineOrder, String> colId;
     @FXML private TableColumn<OnlineOrder, String> colDate;
     @FXML private TableColumn<OnlineOrder, String> colCustomer;
+    @FXML private TableColumn<OnlineOrder, String> colDescription;
     @FXML private TableColumn<OnlineOrder, String> colAddress;
     @FXML private TableColumn<OnlineOrder, Double> colAmount;
     @FXML private TableColumn<OnlineOrder, String> colStatus;
     @FXML private TableColumn<OnlineOrder, String> colPayment;
     @FXML private TableColumn<OnlineOrder, Void> colAction;
-
     @FXML private TextField searchField;
     @FXML private ComboBox<String> statusFilter;
     @FXML private Label infoLabel;
@@ -50,25 +47,20 @@ public class PortalOrdersView {
                 )
         );
 
-        colCustomer.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleStringProperty(
-                        data.getValue().getCustomerName() != null ?
-                                data.getValue().getCustomerName() : data.getValue().getCustomerEmail()
-                )
-        );
+        colCustomer.setCellValueFactory(new PropertyValueFactory<>("customerEmail"));
 
-        colAddress.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleStringProperty(
-                        data.getValue().getDeliveryAddress()
-                )
-        );
+        colDescription.setCellValueFactory(new PropertyValueFactory<>("orderDescription"));
+
+        colAddress.setCellValueFactory(new PropertyValueFactory<>("deliveryAddress"));
 
         colAmount.setCellValueFactory(new PropertyValueFactory<>("totalAmount"));
+
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+
         colPayment.setCellValueFactory(new PropertyValueFactory<>("paymentMethod"));
 
         // Action Button Column (Fulfil Order)
-        colAction.setCellFactory(param -> new TableCell<>() {
+        colAction.setCellFactory(param -> new TableCell<OnlineOrder, Void>() {
             private final Button fulfilBtn = new Button("Fulfil Order");
 
             {
@@ -87,7 +79,7 @@ public class PortalOrdersView {
                 } else {
                     OnlineOrder order = getTableView().getItems().get(getIndex());
 
-                    //Showing button for 'Received', 'Dispatched', 'Shipped'. Hidden for 'Delivered'.
+                    // Show button for all statuses except 'Delivered'
                     if (!"Delivered".equals(order.getStatus())) {
                         fulfilBtn.setVisible(true);
                         fulfilBtn.setDisable(false);
@@ -104,26 +96,24 @@ public class PortalOrdersView {
     private void loadOrders() {
         allOrders.clear();
         allOrders.addAll(puLogic.getPortalOrders());
-
         filteredOrders = new FilteredList<>(allOrders, p -> true);
         ordersTable.setItems(filteredOrders);
-
         infoLabel.setText("Loaded " + allOrders.size() + " orders from Portal.");
     }
 
     private void setupFilters() {
-        //Search Filter
+        // Search Filter
         searchField.textProperty().addListener((obs, old, newVal) -> {
             filteredOrders.setPredicate(order -> {
                 if (newVal == null || newVal.isEmpty()) return true;
                 String lower = newVal.toLowerCase();
-                return String.valueOf(order.getOrderId()).contains(newVal) ||
+                return order.getOrderId().contains(newVal) ||
                         (order.getCustomerEmail() != null && order.getCustomerEmail().toLowerCase().contains(lower)) ||
-                        (order.getCustomerName() != null && order.getCustomerName().toLowerCase().contains(lower));
+                        (order.getOrderDescription() != null && order.getOrderDescription().toLowerCase().contains(lower));
             });
         });
 
-        //Status Filter
+        // Status Filter
         statusFilter.getSelectionModel().select("ALL");
         statusFilter.setOnAction(e -> {
             String selected = statusFilter.getValue();
@@ -141,23 +131,21 @@ public class PortalOrdersView {
     }
 
     /**
-     * Confirms delivery action then marks the order as delivered
+     Confirms delivery action then marks the order as delivered
      */
     private void handleMarkDelivered(OnlineOrder order) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Fulfil Order");
-        confirm.setHeaderText("Mark Order #" + order.getOrderId() + " as Delivered");
+        confirm.setHeaderText("Mark Order #" + order.getOrderId().substring(0, 8) + "..." + " as Delivered");
         confirm.setContentText("This will update the order status to 'Delivered'.");
-
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 if (puLogic.markAsDelivered(order.getOrderId())) {
                     order.setStatus("Delivered");
                     ordersTable.refresh();
-
                     Alert success = new Alert(Alert.AlertType.INFORMATION);
                     success.setTitle("Success");
-                    success.setContentText("Order: " + order.getOrderId() + " marked as delivered successfully.");
+                    success.setContentText("Order marked as delivered successfully.");
                     success.showAndWait();
                 } else {
                     Alert error = new Alert(Alert.AlertType.ERROR);

@@ -20,7 +20,7 @@ public class DatabaseConnector {
     private static final String SA_PASSWORD = "Swim1234";
 
     // IPOS-PU Database
-    private static final String PU_URL = "jdbc:mysql://127.0.0.1:3306/ipos_pu?useSSL=false&allowPublicKeyRetrieval=true";
+    private static final String PU_URL = "jdbc:mysql://127.0.0.1:3306/catalogue?useSSL=false&allowPublicKeyRetrieval=true";
     private static final String PU_USER = "root";
     private static final String PU_PASSWORD = "Swim1234";
 

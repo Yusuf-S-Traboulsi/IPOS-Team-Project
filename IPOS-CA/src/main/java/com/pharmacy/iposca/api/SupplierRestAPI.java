@@ -1,22 +1,12 @@
 package com.pharmacy.iposca.api;
-
 import com.google.gson.*;
 import com.pharmacy.iposca.db.DatabaseConnector;
 import spark.*;
-
 import java.sql.*;
 import java.time.LocalDate;
 
-/**
- * IPOS-SA Supplier Ordering System REST API
- * Runs on port 4568
- * Uses SEPARATE ipos_sa database
- */
 public class SupplierRestAPI {
-
-    private static final String API_KEY =
-            System.getProperty("IPOS_SA_API_KEY", "ipos-sa-secret-key-2026");
-
+    private static final String API_KEY = System.getProperty("IPOS_SA_API_KEY", "ipos-sa-secret-key-2026");
     private static final Gson gson = new Gson();
 
     public static void start(int port) {
@@ -27,7 +17,7 @@ public class SupplierRestAPI {
             res.header("Access-Control-Allow-Origin", "*");
             res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
             res.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
-            return "";
+            return " ";
         });
 
         saService.before((request, response) -> {
@@ -44,62 +34,52 @@ public class SupplierRestAPI {
             }
         });
 
-        // CORS Headers on ALL responses (including errors)
         saService.after((request, response) -> {
             response.header("Access-Control-Allow-Origin", "*");
             response.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
             response.header("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
         });
 
-        // Health Check
         saService.get("/api/health", (req, res) -> {
             res.type("application/json");
             return "{\"status\": \"ok\", \"system\": \"IPOS-SA\", \"timestamp\": \"" + LocalDate.now() + "\"}";
         });
 
-        // Get Catalogue
         saService.get("/api/catalogue", (req, res) -> {
             res.type("application/json");
             return getCatalogue();
         });
 
-        // Get Orders
         saService.get("/api/orders", (req, res) -> {
             res.type("application/json");
             return getOrders();
         });
 
-        // Place Order
         saService.post("/api/orders", (req, res) -> {
             res.type("application/json");
             return placeOrder(req.body());
         });
 
-        // Mark Delivered
         saService.put("/api/orders/:id/delivered", (req, res) -> {
             res.type("application/json");
             return markOrderAsDelivered(req.params(":id"));
         });
 
-        // Mark Paid
         saService.put("/api/orders/:id/paid", (req, res) -> {
             res.type("application/json");
             return markOrderAsPaid(req.params(":id"));
         });
 
-        // Get Balance
         saService.get("/api/balance", (req, res) -> {
             res.type("application/json");
             return getOutstandingBalance();
         });
 
-        // Get Invoices
         saService.get("/api/invoices", (req, res) -> {
             res.type("application/json");
             return getInvoices();
         });
 
-        // Authenticate
         saService.post("/api/auth", (req, res) -> {
             res.type("application/json");
             return authenticate(req.body());
@@ -190,7 +170,6 @@ public class SupplierRestAPI {
     private static String markOrderAsDelivered(String orderId) {
         String sql = "UPDATE supplier_orders SET status = 'Delivered', delivered_date = ? WHERE order_id = ?";
         int rows = executeUpdate(sql, Date.valueOf(LocalDate.now()), orderId);
-
         JsonObject response = new JsonObject();
         if (rows > 0) {
             response.addProperty("success", true);
@@ -206,7 +185,6 @@ public class SupplierRestAPI {
         Connection conn = null;
         PreparedStatement orderStmt = null;
         PreparedStatement invoiceStmt = null;
-
         JsonObject response = new JsonObject();
 
         try {
@@ -257,7 +235,6 @@ public class SupplierRestAPI {
     private static String getOutstandingBalance() {
         String sql = "SELECT SUM(outstanding_balance) as total FROM supplier_invoices WHERE status = 'Unpaid'";
         String result = executeQuery(sql);
-
         JsonObject response = new JsonObject();
         try {
             JsonArray arr = JsonParser.parseString(result).getAsJsonArray();
@@ -359,7 +336,6 @@ public class SupplierRestAPI {
     private static String generateOrderId() {
         String sql = "SELECT MAX(CAST(SUBSTRING(order_id, 3) AS UNSIGNED)) as max_id FROM supplier_orders";
         String result = executeQuery(sql);
-
         try {
             JsonArray arr = JsonParser.parseString(result).getAsJsonArray();
             if (!arr.isEmpty() && arr.get(0).getAsJsonObject().has("max_id")) {
