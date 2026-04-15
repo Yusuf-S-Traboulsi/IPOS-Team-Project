@@ -3,7 +3,7 @@ package com.pharmacy.iposca.model;
 import javafx.beans.property.*;
 
 /**
- * Class representing an invoice for a customer.
+ * This class represents an invoice for a customer.
  */
 public class Invoice {
 
@@ -17,6 +17,7 @@ public class Invoice {
         this.date.set(date);
     }
 
+    //Getter methods
     public String getCustomerName() { return customerName.get(); }
     public double getAmount() { return amount.get(); }
     public String getDate() { return date.get(); }

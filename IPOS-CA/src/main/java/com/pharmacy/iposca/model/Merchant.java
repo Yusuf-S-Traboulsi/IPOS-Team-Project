@@ -16,6 +16,7 @@ public class Merchant {
         this.contactInfo.set(contact);
     }
 
+    //Getter methods
     public String getCompanyName() { return companyName.get(); }
     public String getContactInfo() { return contactInfo.get(); }
 }

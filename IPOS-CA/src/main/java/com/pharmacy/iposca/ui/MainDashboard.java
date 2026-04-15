@@ -98,7 +98,6 @@ public class MainDashboard {
      */
     private void loadScreen(String fxmlFile) {
         try {
-            // FIXED: Use getClass().getResource() instead of Launcher.class.getResource()
             Parent screen = FXMLLoader.load(getClass().getResource(fxmlFile));
             contentArea.getChildren().setAll(screen);
         } catch (IOException e) {
@@ -106,7 +105,7 @@ public class MainDashboard {
             System.err.println("   Error: " + e.getMessage());
             e.printStackTrace();
 
-            // Show error in content area
+            //Show error in the content area
             javafx.scene.control.Label errorLabel = new javafx.scene.control.Label(
                     "Error loading screen: " + fxmlFile + "\n" + e.getMessage()
             );

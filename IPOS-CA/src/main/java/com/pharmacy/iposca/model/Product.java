@@ -14,7 +14,7 @@ public class Product {
     @Expose private final DoubleProperty price = new SimpleDoubleProperty();
     @Expose private final IntegerProperty stock = new SimpleIntegerProperty();
     @Expose private final IntegerProperty lowStockThreshold = new SimpleIntegerProperty();
-    @Expose private final StringProperty supplierItemId = new SimpleStringProperty();
+    @Expose private final StringProperty supplierItemId = new SimpleStringProperty(); // ✅ NEW
 
     public Product(int id, String name, double bulkCost, double markupRate, int stock, int lowStockThreshold) {
         this.id.set(id);
@@ -27,7 +27,8 @@ public class Product {
         this.supplierItemId.set("");
     }
 
-    public Product(int id, String name, double bulkCost, double markupRate, int stock, int lowStockThreshold, String supplierItemId) {
+    public Product(int id, String name, double bulkCost, double markupRate, int stock,
+                   int lowStockThreshold, String supplierItemId) {
         this.id.set(id);
         this.name.set(name);
         this.bulkCost.set(bulkCost);
@@ -38,7 +39,7 @@ public class Product {
         this.supplierItemId.set(supplierItemId);
     }
 
-    //Getters for JavaFX binding
+    //Property getters for JavaFX binding
     public IntegerProperty idProperty() { return id; }
     public StringProperty nameProperty() { return name; }
     public DoubleProperty bulkCostProperty() { return bulkCost; }
@@ -48,7 +49,7 @@ public class Product {
     public IntegerProperty lowStockThresholdProperty() { return lowStockThreshold; }
     public StringProperty supplierItemIdProperty() { return supplierItemId; }
 
-    //Getters and setters (for Json/REST API)
+    //Getter Methods
     public int getId() { return id.get(); }
     public String getName() { return name.get(); }
     public double getBulkCost() { return bulkCost.get(); }
@@ -58,6 +59,7 @@ public class Product {
     public int getLowStockThreshold() { return lowStockThreshold.get(); }
     public String getSupplierItemId() { return supplierItemId.get(); }
 
+    //Setter Methods
     public void setId(int id) { this.id.set(id); }
     public void setName(String name) { this.name.set(name); }
     public void setBulkCost(double bulkCost) { this.bulkCost.set(bulkCost); }
@@ -65,7 +67,7 @@ public class Product {
     public void setPrice(double price) { this.price.set(price); }
     public void setStock(int stock) { this.stock.set(stock); }
     public void setLowStockThreshold(int threshold) { this.lowStockThreshold.set(threshold); }
-    public void setSupplierItemId(String supplierItemId) { this.supplierItemId.set(supplierItemId); }
+    public void setSupplierItemId(String supplierItemId) { this.supplierItemId.set(supplierItemId); } // ✅ NEW
 
     private double calculatePrice(double bulkCost, double markupRate) {
         return bulkCost * (1 + markupRate) * 1.20;

@@ -5,6 +5,8 @@ import com.pharmacy.iposca.model.DocumentTemplate;
 import com.pharmacy.iposca.model.MerchantSettings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 
 import java.sql.*;
 import java.util.HashMap;
@@ -12,7 +14,6 @@ import java.util.Map;
 
 /**
  * This class manages templates and company identity
- * ONLY accessible by Manager role
  */
 public class MerchantSettingsController {
 
@@ -71,7 +72,7 @@ public class MerchantSettingsController {
                 merchantSettings.setPhone("0208 778 0124");
                 merchantSettings.setFax("0208 778 0125");
                 merchantSettings.setEmail("accounts@infopharma.co.uk");
-                merchantSettings.setDirectorName("A. Petite");
+                merchantSettings.setDirectorName("Mr. Lancaster");
             }
 
         } catch (SQLException e) {
@@ -178,18 +179,15 @@ public class MerchantSettingsController {
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            // Binds SQL parameters based on template type
-
-            // Update existing template
+            //Update or insert based on template ID
             if (template.getId() > 0) {
                 stmt.setString(1, template.getSubjectTemplate());
                 stmt.setString(2, template.getBodyTemplate());
                 stmt.setString(3, template.getFooterTemplate());
                 stmt.setBoolean(4, template.isActive());
                 stmt.setInt(5, template.getId());
-                System.out.println("Template updated: " + template.getTemplateName());
 
-            // Insert new template
+            //Inserts new template
             } else {
                 stmt.setString(1, template.getTemplateName());
                 stmt.setString(2, template.getTemplateType());
@@ -197,7 +195,6 @@ public class MerchantSettingsController {
                 stmt.setString(4, template.getBodyTemplate());
                 stmt.setString(5, template.getFooterTemplate());
                 stmt.setBoolean(6, template.isActive());
-                System.out.println("Template added: " + template.getTemplateName());
             }
 
             int rowsAffected = stmt.executeUpdate();

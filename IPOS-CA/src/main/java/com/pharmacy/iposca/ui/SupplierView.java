@@ -9,7 +9,7 @@ import javafx.scene.layout.VBox;
 public class SupplierView extends VBox {
 
     public SupplierView() {
-        // Just load the catalogue view which has all the functionality
+        //Loading the catalogue view which has all the functionality
         SupplierCatalogueView catalogueView = new SupplierCatalogueView();
         getChildren().add(catalogueView);
     }

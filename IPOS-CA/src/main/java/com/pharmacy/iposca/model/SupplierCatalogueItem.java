@@ -6,7 +6,6 @@ import javafx.beans.property.*;
  * Class representing a supplier catalogue item.
  */
 public class SupplierCatalogueItem {
-
     private final StringProperty itemId = new SimpleStringProperty();
     private final StringProperty description = new SimpleStringProperty();
     private final StringProperty packageType = new SimpleStringProperty();
@@ -31,40 +30,14 @@ public class SupplierCatalogueItem {
         this.category.set(category);
     }
 
-    // Getters and Setters
+    //Getters
     public String getItemId() { return itemId.get(); }
-    public void setItemId(String itemId) { this.itemId.set(itemId); }
-    public StringProperty itemIdProperty() { return itemId; }
-
     public String getDescription() { return description.get(); }
-    public void setDescription(String description) { this.description.set(description); }
-    public StringProperty descriptionProperty() { return description; }
-
     public String getPackageType() { return packageType.get(); }
-    public void setPackageType(String packageType) { this.packageType.set(packageType); }
-    public StringProperty packageTypeProperty() { return packageType; }
-
     public String getUnit() { return unit.get(); }
-    public void setUnit(String unit) { this.unit.set(unit); }
-    public StringProperty unitProperty() { return unit; }
-
     public int getUnitsPerPack() { return unitsPerPack.get(); }
-    public void setUnitsPerPack(int units) { this.unitsPerPack.set(units); }
-    public IntegerProperty unitsPerPackProperty() { return unitsPerPack; }
-
     public double getPackageCost() { return packageCost.get(); }
-    public void setPackageCost(double cost) { this.packageCost.set(cost); }
-    public DoubleProperty packageCostProperty() { return packageCost; }
-
     public int getAvailability() { return availability.get(); }
-    public void setAvailability(int availability) { this.availability.set(availability); }
-    public IntegerProperty availabilityProperty() { return availability; }
-
     public int getStockLimit() { return stockLimit.get(); }
-    public void setStockLimit(int limit) { this.stockLimit.set(limit); }
-    public IntegerProperty stockLimitProperty() { return stockLimit; }
-
     public String getCategory() { return category.get(); }
-    public void setCategory(String category) { this.category.set(category); }
-    public StringProperty categoryProperty() { return category; }
 }

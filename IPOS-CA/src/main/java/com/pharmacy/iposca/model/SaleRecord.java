@@ -12,7 +12,7 @@ public class SaleRecord {
     private final LocalDate date;
     private final String paymentType;
 
-    // Discount fields (for detailed reporting)
+    //Discount fields
     private final double discountRate;
     private final double discountAmount;
     private final double totalBeforeDiscount;
@@ -33,12 +33,12 @@ public class SaleRecord {
         this.discountAmount = 0.0;
         this.totalBeforeDiscount = amount;
         this.totalAfterDiscount = amount;
-        this.vatAmount = amount * 0.20; // Default VAT
+        this.vatAmount = amount * 0.20; //Default VAT
         this.isAccountHolder = false;
     }
 
     /**
-     * Full constructor (for detailed sales with discount info)
+     * Full constructor
      */
     public SaleRecord(int id, String customerName, double amount, LocalDate date,
                       String paymentType, double discountRate, double discountAmount,
@@ -57,7 +57,7 @@ public class SaleRecord {
         this.isAccountHolder = isAccountHolder;
     }
 
-    // Getters
+    //Getters
     public int getId() { return id; }
     public String getCustomerName() { return customerName; }
     public double getAmount() { return amount; }

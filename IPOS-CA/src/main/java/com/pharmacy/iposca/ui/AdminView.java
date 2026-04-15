@@ -14,13 +14,13 @@ public class AdminView {
     @FXML private TableView<User> userTable;
     @FXML private TableColumn<User, Integer> idCol;
     @FXML private TableColumn<User, String> usernameCol;
-    @FXML private TableColumn<User, String> fullNameCol;  // Match FXML
+    @FXML private TableColumn<User, String> fullNameCol;
     @FXML private TableColumn<User, String> roleCol;
     @FXML private TableColumn<User, Boolean> activeCol;
 
     @FXML private TextField newUsernameField;
-    @FXML private TextField newFullNameField;  // Match FXML
-    @FXML private PasswordField newPasswordField;  // Match FXML (lowercase 'w')
+    @FXML private TextField newFullNameField;
+    @FXML private PasswordField newPasswordField;
     @FXML private ComboBox<String> roleDropdown;
     @FXML private ComboBox<String> roleUpdateDropdown; //For promoting/demoting user roles
 
@@ -32,7 +32,7 @@ public class AdminView {
     public void initialize() {
         idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
 
-        // Username column (editable)
+        //Username column, editable
         usernameCol.setCellValueFactory(new PropertyValueFactory<>("username"));
         usernameCol.setCellFactory(TextFieldTableCell.forTableColumn());
         usernameCol.setOnEditCommit(e -> {
@@ -47,10 +47,10 @@ public class AdminView {
             informationLabel.setText("Full name updated");
         });
 
-        // Role column
+        //Role column
         roleCol.setCellValueFactory(new PropertyValueFactory<>("role"));
 
-        // Active status column (color-coded)
+        //Active status column
         activeCol.setCellValueFactory(cellData -> cellData.getValue().isActiveProperty());
         activeCol.setCellFactory(col -> new TableCell<User, Boolean>() {
             @Override
@@ -119,7 +119,7 @@ public class AdminView {
             informationLabel.setStyle("-fx-text-fill: red;");
             return;
         }
-        // Confirm deletion
+        //Confirms deletion
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                 "Delete user: " + selected.getUsername() + "?");
         confirm.showAndWait().ifPresent(response -> {
@@ -135,8 +135,8 @@ public class AdminView {
     @FXML
     private void createUserLogic() {
         String username = newUsernameField.getText();
-        String fullName = newFullNameField.getText();  // Get fullName
-        String password = newPasswordField.getText();  // Match FXML field name
+        String fullName = newFullNameField.getText();
+        String password = newPasswordField.getText();
         String role = roleDropdown.getValue();
 
         if (username.isEmpty() || fullName.isEmpty() || password.isEmpty() || role == null) {
@@ -149,7 +149,7 @@ public class AdminView {
         informationLabel.setText("User created: " + username);
         informationLabel.setStyle("-fx-text-fill: green;");
 
-        // Clear fields
+        //Clear fields
         newUsernameField.clear();
         newFullNameField.clear();
         newPasswordField.clear();

@@ -16,7 +16,7 @@ public class DocumentTemplate {
     private final BooleanProperty isActive = new SimpleBooleanProperty(true);
 
     public DocumentTemplate() {
-        // Default constructor
+        //Default constructor
     }
 
     public DocumentTemplate(String name, String type, String subject, String body, String footer) {
@@ -27,12 +27,12 @@ public class DocumentTemplate {
         this.footerTemplate.set(footer);
     }
 
-    // Getters and Setters
+    //Getters and Setters
     public int getId() { return id.get(); }
     public void setId(int id) { this.id.set(id); }
 
     public String getTemplateName() { return templateName.get(); }
-    public void setTemplateName(String name) { this.templateName.set(name); }
+    public void setTemplateName(String name) { this.templateName.set(name); } //INVOICE, MONTHLY_STATEMENT, FIRST_REMINDER, SECOND_REMINDER
 
     public String getTemplateType() { return templateType.get(); }
     public void setTemplateType(String type) { this.templateType.set(type); }
@@ -49,7 +49,7 @@ public class DocumentTemplate {
     public boolean isActive() { return isActive.get(); }
     public void setActive(boolean active) { this.isActive.set(active); }
 
-    // Property getters
+    //Property getters
     public IntegerProperty idProperty() { return id; }
     public StringProperty templateNameProperty() { return templateName; }
     public StringProperty templateTypeProperty() { return templateType; }

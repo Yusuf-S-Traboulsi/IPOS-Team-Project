@@ -8,7 +8,6 @@ import java.time.LocalDate;
  * Includes discount plan, Fixed & Flexible/Variable plans.
  */
 public class Customer {
-
     private final IntegerProperty id = new SimpleIntegerProperty();
     private final StringProperty title = new SimpleStringProperty();
     private final StringProperty name = new SimpleStringProperty();
@@ -49,7 +48,7 @@ public class Customer {
         this.monthlyPurchaseTotal.set(0.0);
     }
 
-   //Getter and Setter Methods
+    //Getters and setters
     public int getId() { return id.get(); }
     public void setId(int id) { this.id.set(id); }
     public IntegerProperty idProperty() { return id; }
@@ -133,8 +132,6 @@ public class Customer {
 
     /**
      * This method calculates effective discount rate based on plan type and monthly purchases.
-     * Fixed plan: Same discount rate for all purchases
-     * Variable plan: Tiered discounts based on monthly purchases
      */
     public double calculateEffectiveDiscountRate() {
         if ("NONE".equals(discountPlanType.get())) {

@@ -14,17 +14,21 @@ import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.util.converter.IntegerStringConverter;
-
 import java.io.File;
 import java.time.LocalDate;
 
 /**
- * This UI class is responsible for displaying and managing the Point-of-Sale(POS) view.
+ * This UI class is responsible for displaying and managing the Point-of-Sale view.
  * Handles sales for both account holders and walk-in customers
  * Opens invoice in browser after successful transaction
  */
 public class POSView {
 
+    //Tab Controls
+    @FXML private TabPane posTabPane;
+    @FXML private Tab shoppingTab, debtTab;
+
+    //Shopping Tab Controls
     @FXML private TextField searchField;
     @FXML private ListView<Product> catalogList;
     @FXML private TableView<SalesController.CartItem> cartTable;
@@ -32,15 +36,22 @@ public class POSView {
     @FXML private TableColumn<SalesController.CartItem, Integer> cartQtyCol;
     @FXML private TableColumn<SalesController.CartItem, Double> cartPriceCol;
     @FXML private TextField customerIdField;
-    @FXML private RadioButton cashRadio;
-    @FXML private RadioButton cardRadio;
+    @FXML private Label customerStatusLabel;
+    @FXML private RadioButton cashRadio, cardRadio, creditRadio;
     @FXML private VBox cardDetailsBox;
-    @FXML private TextField cardTypeField;
-    @FXML private TextField cardFirstFour;
-    @FXML private TextField cardLastFour;
-    @FXML private TextField cardExpiry;
+    @FXML private TextField cardTypeField, cardFirstFour, cardLastFour, cardExpiry;
     @FXML private Text totalText;
     @FXML private Label informationLabel;
+
+    //Debt Tab Controls
+    @FXML private TextField debtCustomerIdField;
+    @FXML private VBox debtPaymentBox;
+    @FXML private Label debtCustomerLabel, debtLabel, debtStatusWarning;
+    @FXML private TextField debtPaymentAmount;
+    @FXML private RadioButton debtCashRadio, debtCardRadio;
+    @FXML private VBox debtCardDetailsBox;
+    @FXML private TextField debtCardTypeField, debtCardFirstFour, debtCardLastFour, debtCardExpiry;
+    @FXML private Button payDebtButton;
 
     private InventoryController inventoryController;
     private CustomerController customerController;
@@ -50,15 +61,14 @@ public class POSView {
 
     @FXML
     public void initialize() {
-        // Initialize controllers
         inventoryController = InventoryController.getInstance();
         customerController = CustomerController.getInstance();
         salesController = new SalesController(inventoryController);
 
-        // Initialize catalog
+        //Initialize product Catalogue
         catalog = FXCollections.observableArrayList(inventoryController.getProducts());
 
-        // Setup catalog list
+        //Sets up the catalogue list
         catalogList.setItems(catalog);
         catalogList.setCellFactory(lv -> new ListCell<Product>() {
             @Override
@@ -73,7 +83,7 @@ public class POSView {
             }
         });
 
-        // Search functionality
+        //Search field
         searchField.textProperty().addListener((obs, old, newVal) -> {
             if (newVal == null || newVal.isEmpty()) {
                 catalogList.setItems(catalog);
@@ -89,13 +99,10 @@ public class POSView {
             }
         });
 
-        // Setup cart table
+        //Setting up the cart table
         cartTable.setItems(salesController.getCart());
         cartTable.setEditable(true);
-
         cartItemCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-        cartItemCol.setSortable(false);
-
         cartQtyCol.setCellValueFactory(new PropertyValueFactory<>("quantity"));
         cartQtyCol.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
         cartQtyCol.setOnEditCommit(e -> {
@@ -103,32 +110,47 @@ public class POSView {
             item.setQuantity(e.getNewValue());
             updateTotal();
         });
-
         cartPriceCol.setCellValueFactory(new PropertyValueFactory<>("price"));
-        cartPriceCol.setCellFactory(column -> new TableCell<SalesController.CartItem, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                setText(empty || item == null ? null : String.format("£%.2f", item));
-            }
-        });
 
-        // Toggle card details visibility
+        //Toggles card details visibility
         cashRadio.setOnAction(e -> {
             cardDetailsBox.setVisible(false);
+            cardDetailsBox.setManaged(false);
             updateTotal();
         });
         cardRadio.setOnAction(e -> {
             cardDetailsBox.setVisible(true);
+            cardDetailsBox.setManaged(true);
+            updateTotal();
+        });
+        creditRadio.setOnAction(e -> {
+            cardDetailsBox.setVisible(false);
+            cardDetailsBox.setManaged(false);
             updateTotal();
         });
 
-        // Customer lookup
         customerIdField.setOnAction(e -> lookupCustomer());
 
-        // Set default payment method
-        cashRadio.setSelected(true);
-        cardDetailsBox.setVisible(false);
+        //Toggles debt payment visibility
+        debtCashRadio.setOnAction(e -> {
+            debtCardDetailsBox.setVisible(false);
+            debtCardDetailsBox.setManaged(false);
+        });
+        debtCardRadio.setOnAction(e -> {
+            debtCardDetailsBox.setVisible(true);
+            debtCardDetailsBox.setManaged(true);
+        });
 
+        //Initialize UI
+        cashRadio.setSelected(true);
+        debtCashRadio.setSelected(true);
+        cardDetailsBox.setVisible(false);
+        cardDetailsBox.setManaged(false);
+        debtCardDetailsBox.setVisible(false);
+        debtCardDetailsBox.setManaged(false);
+        debtPaymentBox.setVisible(false);
+        debtPaymentBox.setManaged(false);
+        customerStatusLabel.setText("");
         updateTotal();
     }
 
@@ -139,19 +161,18 @@ public class POSView {
             showAlert("Please select a product from the catalog.");
             return;
         }
-
         if (selected.getStock() <= 0) {
             showAlert("Product out of stock!");
             return;
         }
 
-        // Check if already in cart
+        //Check if item already in cart, if so increase quantity
         for (SalesController.CartItem item : salesController.getCart()) {
             if (item.getProduct().getId() == selected.getId()) {
                 if (item.getQuantity() < selected.getStock()) {
                     item.setQuantity(item.getQuantity() + 1);
                     updateTotal();
-                    informationLabel.setText("Added to cart: " + selected.getName());
+                    informationLabel.setText("Added: " + selected.getName());
                     informationLabel.setStyle("-fx-text-fill: green;");
                     return;
                 } else {
@@ -163,11 +184,9 @@ public class POSView {
 
         salesController.addItemToCart(selected);
         updateTotal();
-        informationLabel.setText("Added to cart: " + selected.getName());
+        informationLabel.setText("Added: " + selected.getName());
         informationLabel.setStyle("-fx-text-fill: green;");
-
-        // Refresh catalog to show updated stock
-        catalog.setAll(inventoryController.getProducts());
+        catalog.setAll(inventoryController.getProducts()); //Refresh catalogue after adding to cart
     }
 
     @FXML
@@ -176,43 +195,94 @@ public class POSView {
         if (selected != null) {
             salesController.removeItemFromCart(selected);
             updateTotal();
-            informationLabel.setText("Item removed from cart");
+            informationLabel.setText("Item removed");
             informationLabel.setStyle("-fx-text-fill: green;");
         } else {
-            showAlert("Please select an item to remove.");
+            showAlert("Select an item to remove.");
         }
     }
 
     /**
      * Lookup customer by ID
      */
+    @FXML
     private void lookupCustomer() {
         try {
             int customerId = Integer.parseInt(customerIdField.getText());
             currentCustomer = customerController.findCustomerById(customerId);
 
             if (currentCustomer != null) {
-                showAlert("Customer found: " + currentCustomer.getName() +
-                        "\nStatus: " + currentCustomer.getAccountStatus() +
-                        "\nCredit Limit: £" + currentCustomer.getCreditLimit() +
-                        "\nCurrent Debt: £" + currentCustomer.getCurrentDebt());
+                //Checking Account Status
+                String status = currentCustomer.getAccountStatus();
 
-                // Account holders must pay by card
+                //Blocks purchases on suspended accounts with debt alert
+                if ("Suspended".equals(status)) {
+                    customerStatusLabel.setText("ACCOUNT SUSPENDED - Cannot purchase until debt is cleared");
+                    customerStatusLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                    showAlert("ACCOUNT SUSPENDED\n\nThis customer account is suspended due to outstanding debt.\n\n" +
+                            "Current Debt: £" + String.format("%.2f", currentCustomer.getCurrentDebt()) + "\n" +
+                            "Credit Limit: £" + String.format("%.2f", currentCustomer.getCreditLimit()) + "\n\n" +
+                            "Please clear outstanding balance before allowing purchases.");
+                    currentCustomer = null;
+                    return;
+                }
+
+                //Blocks in-defaulted accounts
+                if ("In Default".equals(status)) {
+                    customerStatusLabel.setText("ACCOUNT IN DEFAULT - Cannot purchase");
+                    customerStatusLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                    showAlert("ACCOUNT IN DEFAULT\n\nThis customer account is in default status.\n\n" +
+                            "Current Debt: £" + String.format("%.2f", currentCustomer.getCurrentDebt()) + "\n" +
+                            "Credit Limit: £" + String.format("%.2f", currentCustomer.getCreditLimit()) + "\n\n" +
+                            "Manager approval required to restore account.");
+                    currentCustomer = null;
+                    return;
+                }
+
+                //Checking Available Credit Limit
+                double availableCredit = currentCustomer.getCreditLimit() - currentCustomer.getCurrentDebt();
+                if (availableCredit <= 0) {
+                    customerStatusLabel.setText("NO AVAILABLE CREDIT - Credit limit reached");
+                    customerStatusLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                    showAlert("CREDIT LIMIT REACHED\n\nThis customer has no available credit.\n\n" +
+                            "Current Debt: £" + String.format("%.2f", currentCustomer.getCurrentDebt()) + "\n" +
+                            "Credit Limit: £" + String.format("%.2f", currentCustomer.getCreditLimit()) + "\n" +
+                            "Available Credit: £0.00\n\n" +
+                            "Payment required before further purchases.");
+                    currentCustomer = null;
+                    return;
+                }
+
+                //Customer is valid
+                customerStatusLabel.setText(currentCustomer.getName() + " | Status: " + status + " | Available Credit: £" + String.format("%.2f", availableCredit));
+                customerStatusLabel.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
+
+                //Force card/credit payment for account holders
                 cashRadio.setSelected(false);
-                cardRadio.setSelected(true);
-                cardDetailsBox.setVisible(true);
+                cashRadio.setDisable(true);
+                creditRadio.setDisable(false);
+                cardRadio.setDisable(false);
 
                 informationLabel.setText("Customer: " + currentCustomer.getName() + " (Account Holder)");
                 informationLabel.setStyle("-fx-text-fill: blue;");
+                updateTotal();
             } else {
+                //For Walk-in Customers
+                customerStatusLabel.setText("");
                 showAlert("Customer ID not found. Proceeding as walk-in customer.");
                 currentCustomer = null;
                 informationLabel.setText("Walk-in Customer");
                 informationLabel.setStyle("-fx-text-fill: orange;");
+                cashRadio.setDisable(false); //Allow cash payment for walk-in customers
+                updateTotal();
             }
         } catch (NumberFormatException e) {
+            //For invalid Customer IDs
+            customerStatusLabel.setText("");
             showAlert("Invalid Customer ID format.");
             currentCustomer = null;
+            cashRadio.setDisable(false);
+            updateTotal();
         }
     }
 
@@ -223,15 +293,23 @@ public class POSView {
             return;
         }
 
-        String paymentType = cashRadio.isSelected() ? "CASH" : "CARD";
+        //Determining payment type
+        String paymentType;
+        if (cashRadio.isSelected()) {
+            paymentType = "CASH";
+        } else if (cardRadio.isSelected()) {
+            paymentType = "CARD";
+        } else {
+            paymentType = "CREDIT";
+        }
 
-        // Validate payment method for account holders
+        //Disabling cash payment for account holders
         if (currentCustomer != null && "CASH".equals(paymentType)) {
-            showAlert("ERROR: Account holders must pay by card.");
+            showAlert("Account holders cannot pay with cash\n" + "Account holders must use Card or Credit payment method.");
             return;
         }
 
-        // Validate card details if paying by card
+        //Validate card details if card selected
         if ("CARD".equals(paymentType)) {
             String cardError = validateCardDetails();
             if (cardError != null) {
@@ -240,7 +318,30 @@ public class POSView {
             }
         }
 
-        // Process the sale
+        //Validating account status before processing
+        if (currentCustomer != null) {
+            String status = currentCustomer.getAccountStatus();
+            if (!"Normal".equals(status)) {
+                showAlert("Transaction Denied\n\nAccount status is '" + status + "'.\n" + "Please settle outstanding balance first.");
+                return;
+            }
+
+            //Checking if purchase would exceed credit limit
+            double totalDue = salesController.calculateTotal();
+            double discountRate = currentCustomer.calculateEffectiveDiscountRate();
+            double totalAfterDiscount = totalDue - (totalDue * discountRate);
+            double availableCredit = currentCustomer.getCreditLimit() - currentCustomer.getCurrentDebt();
+
+            if (totalAfterDiscount > availableCredit) {
+                showAlert("Transaction Exceeds Credit Limit\n\n" +
+                        "Available Credit: £" + String.format("%.2f", availableCredit) + "\n" +
+                        "Purchase Total: £" + String.format("%.2f", totalAfterDiscount) + "\n\n" +
+                        "Please reduce cart total or make a payment first.");
+                return;
+            }
+        }
+
+        //Process the sale
         String result = salesController.processSale(
                 currentCustomer,
                 paymentType,
@@ -251,11 +352,9 @@ public class POSView {
         );
 
         if ("SUCCESS".equals(result)) {
-            // Generate invoice
+            //Generates invoices for customers
             File invoice = salesController.generateFormalLetter(currentCustomer);
-
-            // OPEN INVOICE IN BROWSER
-            openInvoiceInBrowser(invoice);
+            openInvoiceInBrowser(invoice); //Opens the invoice in the browser
 
             String discountInfo = "";
             if (currentCustomer != null) {
@@ -265,54 +364,145 @@ public class POSView {
                 }
             }
 
-            showAlert("Sale Completed Successfully!" +
-                    "\nTotal: " + totalText.getText() +
-                    discountInfo +
-                    "\nInvoice opened in browser");
+            showAlert("Sale Completed Successfully\n\n" + "Total: " + totalText.getText() + discountInfo + "\n\nInvoice opened in browser");
 
-            // Clear cart
+            //Resets cart for next customer
             salesController.getCart().clear();
             updateTotal();
             customerIdField.clear();
+            customerStatusLabel.setText("");
             cardTypeField.clear();
             cardFirstFour.clear();
             cardLastFour.clear();
             cardExpiry.clear();
             currentCustomer = null;
-            informationLabel.setText("Sale completed - Ready for next customer");
+            cashRadio.setSelected(true);
+            cashRadio.setDisable(false);
+            creditRadio.setDisable(false);
+            cardRadio.setDisable(false);
+            cardDetailsBox.setVisible(false);
+            cardDetailsBox.setManaged(false);
+            informationLabel.setText("Sale completed! Ready for next customer");
             informationLabel.setStyle("-fx-text-fill: green;");
-
-            // Refresh catalog to show updated stock
             catalog.setAll(inventoryController.getProducts());
         } else {
-            showAlert("Sale Failed:\n" + result);
+            showAlert("Sale Failed:\n\n" + result);
             informationLabel.setText("Sale failed");
             informationLabel.setStyle("-fx-text-fill: red;");
         }
     }
 
-    /**
-     * Opens the invoice HTML file in the default browser
-     */
-    private void openInvoiceInBrowser(File invoiceFile) {
+
+    //Debt Payment Methods
+    @FXML
+    private void lookupCustomerForDebt() {
         try {
-            if (java.awt.Desktop.isDesktopSupported()) {
-                java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
-                if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
-                    desktop.browse(invoiceFile.toURI());
-                    System.out.println("Invoice opened in browser: " + invoiceFile.getAbsolutePath());
+            int customerId = Integer.parseInt(debtCustomerIdField.getText());
+            currentCustomer = customerController.findCustomerById(customerId);
+
+            if (currentCustomer != null) {
+                debtCustomerLabel.setText(currentCustomer.getTitle() + " " + currentCustomer.getName());
+                debtLabel.setText("Outstanding Debt: £" + String.format("%.2f", currentCustomer.getCurrentDebt()));
+
+                // Show status warning if applicable
+                String status = currentCustomer.getAccountStatus();
+                if ("Suspended".equals(status)) {
+                    debtStatusWarning.setText("Account is SUSPENDED. Payment required to restore to Normal status.");
+                } else if ("In Default".equals(status)) {
+                    debtStatusWarning.setText("Account is IN DEFAULT. Manager approval may be required.");
                 } else {
-                    System.out.println("Desktop BROWSE action not supported");
-                    showAlert("Invoice saved to: " + invoiceFile.getAbsolutePath());
+                    debtStatusWarning.setText("");
                 }
+
+                debtPaymentBox.setVisible(true);
+                debtPaymentBox.setManaged(true);
+                informationLabel.setText("Found: " + currentCustomer.getName());
+                informationLabel.setStyle("-fx-text-fill: blue;");
             } else {
-                System.out.println("Desktop not supported");
-                showAlert("Invoice saved to: " + invoiceFile.getAbsolutePath());
+                debtCustomerLabel.setText("");
+                debtLabel.setText("Outstanding Debt: £0.00");
+                debtStatusWarning.setText("");
+                debtPaymentBox.setVisible(false);
+                debtPaymentBox.setManaged(false);
+                showAlert("Customer not found. Please check Customer ID.");
             }
-        } catch (Exception e) {
-            System.err.println("Error opening invoice in browser: " + e.getMessage());
-            e.printStackTrace();
-            showAlert("Invoice saved to: " + invoiceFile.getAbsolutePath());
+        } catch (NumberFormatException e) {
+            showAlert("Invalid Customer ID format.");
+        }
+    }
+
+    /**
+     * Handles debt payment processing
+     */
+    @FXML
+    private void processDebtPayment() {
+        if (currentCustomer == null) {
+            showAlert("No customer selected.");
+            return;
+        }
+
+        double currentDebt = currentCustomer.getCurrentDebt();
+        if (currentDebt <= 0) {
+            showAlert("This customer has no outstanding debt.");
+            return;
+        }
+
+        //Processes debt payment with validation and UI updates
+        try {
+            double paymentAmount = Double.parseDouble(debtPaymentAmount.getText());
+
+            if (paymentAmount <= 0) {
+                showAlert("Payment amount must be positive.");
+                return;
+            }
+
+            if (paymentAmount > currentDebt) {
+                showAlert("Payment amount (£" + String.format("%.2f", paymentAmount) + ") exceeds outstanding debt (£" + String.format("%.2f", currentDebt) + ").");
+                return;
+            }
+
+            //Validating card if card payment selected
+            if (debtCardRadio.isSelected()) {
+                String cardError = validateDebtCardDetails();
+                if (cardError != null) {
+                    showAlert("Card Validation Error: " + cardError);
+                    return;
+                }
+            }
+
+            // Process payment via CustomerController
+            currentCustomer.setCurrentDebt(currentDebt - paymentAmount);
+
+            //Resets reminders if debt cleared
+            if (currentCustomer.getCurrentDebt() <= 0) {
+                currentCustomer.setStatus1stReminder("no_need");
+                currentCustomer.setStatus2ndReminder("no_need");
+
+                //Auto-reset account status if not "In Default"
+                if (!"In Default".equals(currentCustomer.getAccountStatus())) {
+                    currentCustomer.setAccountStatus("Normal");
+                }
+            }
+
+            //Save to database
+            customerController.updateCustomer(currentCustomer);
+
+            double newDebt = currentCustomer.getCurrentDebt();
+            debtLabel.setText("Outstanding Debt: £" + String.format("%.2f", newDebt));
+
+            if (newDebt <= 0) {
+                debtStatusWarning.setText("Debt cleared! Account status restored to Normal.");
+                showAlert("Payment Processed Successfully!\n\n" + "Debt cleared in full!\n" + "Account status has been restored to 'Normal'.\n" + "Customer can now make purchases.");
+            } else {
+                debtStatusWarning.setText("Payment processed. Remaining debt: £" + String.format("%.2f", newDebt));
+                showAlert("Payment Processed!\n\n" + "Payment Amount: £" + String.format("%.2f", paymentAmount) + "\n" + "Remaining Debt: £" + String.format("%.2f", newDebt));
+            }
+            informationLabel.setText("Debt payment processed for " + currentCustomer.getName());
+            informationLabel.setStyle("-fx-text-fill: green;");
+            debtPaymentAmount.clear();
+
+        } catch (NumberFormatException e) {
+            showAlert("Invalid payment amount format.");
         }
     }
 
@@ -328,44 +518,73 @@ public class POSView {
         if (cardType == null || !cardType.matches("^(Credit|Debit)$")) {
             return "Card type must be 'Credit' or 'Debit'";
         }
-
         if (firstFour == null || !firstFour.matches("^\\d{4}$")) {
             return "First 4 digits must be 4 numbers";
         }
-
         if (lastFour == null || !lastFour.matches("^\\d{4}$")) {
             return "Last 4 digits must be 4 numbers";
         }
-
         if (expiry == null || !expiry.matches("^\\d{2}/\\d{2}$")) {
             return "Expiry must be MM/YY format";
         }
 
-        // Check expiry not in the past
+        //Checks expiry date against current date
         try {
             String[] parts = expiry.split("/");
             int month = Integer.parseInt(parts[0]);
             int year = Integer.parseInt("20" + parts[1]);
             int currentYear = LocalDate.now().getYear();
             int currentMonth = LocalDate.now().getMonthValue();
-
             if (year < currentYear || (year == currentYear && month < currentMonth)) {
                 return "Card has expired";
             }
         } catch (Exception e) {
             return "Invalid expiry date";
         }
-
         return null;
     }
 
     /**
-     * Update total display with discount applied
+     * Validates all debt card fields
+     */
+    private String validateDebtCardDetails() {
+        String cardType = debtCardTypeField.getText();
+        String firstFour = debtCardFirstFour.getText();
+        String lastFour = debtCardLastFour.getText();
+        String expiry = debtCardExpiry.getText();
+
+        if (cardType == null || !cardType.matches("^(Credit|Debit)$")) {
+            return "Card type must be 'Credit' or 'Debit'";
+        }
+        if (firstFour == null || !firstFour.matches("^\\d{4}$")) {
+            return "First 4 digits must be 4 numbers";
+        }
+        if (lastFour == null || !lastFour.matches("^\\d{4}$")) {
+            return "Last 4 digits must be 4 numbers";
+        }
+        if (expiry == null || !expiry.matches("^\\d{2}/\\d{2}$")) {
+            return "Expiry must be MM/YY format";
+        }
+        try {
+            String[] parts = expiry.split("/");
+            int month = Integer.parseInt(parts[0]);
+            int year = Integer.parseInt("20" + parts[1]);
+            int currentYear = LocalDate.now().getYear();
+            int currentMonth = LocalDate.now().getMonthValue();
+            if (year < currentYear || (year == currentYear && month < currentMonth)) {
+                return "Card has expired";
+            }
+        } catch (Exception e) {
+            return "Invalid expiry date";
+        }
+        return null;
+    }
+
+    /**
+     * Updates total display with discount applied
      */
     private void updateTotal() {
         double total = salesController.calculateTotal();
-
-        // Apply discount if account holder
         if (currentCustomer != null) {
             double discountRate = currentCustomer.calculateEffectiveDiscountRate();
             if (discountRate > 0) {
@@ -373,12 +592,30 @@ public class POSView {
                 total = total - discountAmount;
             }
         }
-
         totalText.setText(String.format("£%.2f", total));
     }
 
+    //Helper method for opening invoice in browser
+    private void openInvoiceInBrowser(File invoiceFile) {
+        try {
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+                if (desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
+                    desktop.browse(invoiceFile.toURI());
+                    System.out.println("Invoice opened: " + invoiceFile.getAbsolutePath());
+                } else {
+                    showAlert("Invoice saved: " + invoiceFile.getAbsolutePath());
+                }
+            } else {
+                showAlert("Invoice saved: " + invoiceFile.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            showAlert("Invoice saved: " + invoiceFile.getAbsolutePath());
+        }
+    }
+
     /**
-     * Show alert dialog
+     * Method to show alert dialog
      */
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);

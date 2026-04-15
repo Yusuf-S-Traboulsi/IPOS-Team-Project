@@ -29,7 +29,7 @@ public class AdminController {
     }
 
     /**
-     * Method to get and load users from database
+     * Method to load users from database
      */
     private void loadUsersFromDatabase() {
         String sql = "SELECT id, username, full_name, password, role, active FROM users";
@@ -164,9 +164,9 @@ public class AdminController {
         String sql = "UPDATE users SET role = ? WHERE id = ?"; //updates role column in users table
 
         try (Connection conn = DatabaseConnector.getConnection();
-        PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1,newRole); //sets the new role
+            stmt.setString(1, newRole); //sets the new role
             stmt.setInt(2, user.getId()); //sets the user id to the prepared stm
 
             int rowsAffected = stmt.executeUpdate();

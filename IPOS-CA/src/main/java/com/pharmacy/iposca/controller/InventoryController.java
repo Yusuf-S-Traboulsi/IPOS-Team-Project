@@ -9,6 +9,9 @@ import java.sql.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * This class handles the inventory management
+ */
 public class InventoryController {
 
     private static InventoryController instance;
@@ -19,6 +22,7 @@ public class InventoryController {
         loadVatRateFromDatabase();
         loadProductsFromDatabase();
     }
+
     public static synchronized InventoryController getInstance() {
         if (instance == null) {
             instance = new InventoryController();
@@ -27,7 +31,7 @@ public class InventoryController {
     }
 
     /**
-     * Loads VAT rate from merchant_settings table
+     * Method to load VAT rate, from the merchant_settings table
      */
     private void loadVatRateFromDatabase() {
         String sql = "SELECT vat_rate FROM merchant_settings LIMIT 1";
@@ -48,7 +52,7 @@ public class InventoryController {
     }
 
     /**
-     * Save VAT rate to merchant_settings table
+     * Save VAT rate to database, in the merchant_settings table
      */
     public void saveVatRateToDatabase(double rate) {
         String sql = "UPDATE merchant_settings SET vat_rate = ? WHERE id = 1";
@@ -151,7 +155,7 @@ public class InventoryController {
     }
 
     /**
-     * Method to update entire product and save to database
+     * Method to update product info and save it to database
      */
     public boolean updateProduct(Product product) {
         if (product == null) return false;
@@ -184,7 +188,7 @@ public class InventoryController {
     }
 
     /**
-     * Method to update the product field and save it to database (for TableView edits)
+     * Method to update the product field and save it to database
      */
     public boolean updateProductField(int productId, String fieldName, Object newValue) {
         String sql = "UPDATE products SET " + fieldName + " = ? WHERE id = ?";
@@ -261,7 +265,7 @@ public class InventoryController {
     }
 
     /**
-     * Decrements stock in database AND local cache for when a sale happens
+     * Decrement stock in database and local cache when a sale happens
      */
     public boolean decrementLocalStock(int itemID, int quantity) {
         String sql = "UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?";
@@ -336,6 +340,7 @@ public class InventoryController {
         double priceBeforeVat = p.getBulkCost() * (1 + p.getMarkupRate());
         return priceBeforeVat * (1 + currentVatRate);
     }
+
     public void refreshAllPrices() {
         for (Product p : masterInventory) {
             p.setPrice(calculateRetailPrice(p));

@@ -3,7 +3,7 @@ package com.pharmacy.iposca.controller;
 import com.pharmacy.iposca.model.User;
 
 /**
- * Authentication Service - Handles user login/logout
+ * This class handles the user login/logout
  */
 public class AuthenticationService {
 
@@ -30,8 +30,8 @@ public class AuthenticationService {
 
     /**
      * Login with username and password
-     * @param username User's username
-     * @param password User's password
+     * @param username User's username (case-sensitive)
+     * @param password User's password (case-sensitive)
      * @return true if login successful, false otherwise
      */
     public boolean login(String username, String password) {
@@ -66,7 +66,7 @@ public class AuthenticationService {
     }
 
     /**
-     * Logout - clear the current session
+     * Logout method to clear the current session
      */
     public void logout() {
         System.out.println("User logged out: " + (authenticatedUser != null ? authenticatedUser.getUsername() : "Unknown"));

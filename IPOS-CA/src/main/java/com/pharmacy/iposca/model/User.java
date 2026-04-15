@@ -25,7 +25,7 @@ public class User {
         this.isActive.set(true);
     }
 
-    // Getters and Setters
+    //Getters and Setters
     public int getId() { return id.get(); }
     public String getUsername() { return username.get(); }
     public void setUsername(String username) { this.username.set(username); }

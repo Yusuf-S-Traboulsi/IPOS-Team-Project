@@ -19,7 +19,7 @@ public class LoginView {
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
 
-    // Connect to the same list the Admin uses
+    //Connecting to the same list the Admin uses
     private AdminController adminController = AdminController.getInstance();
     private AuthenticationService authService = new AuthenticationService(adminController);
 
