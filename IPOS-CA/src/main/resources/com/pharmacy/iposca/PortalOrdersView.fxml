@@ -25,9 +25,8 @@
         <ComboBox fx:id="statusFilter" promptText="Filter by Status" prefWidth="150">
             <items>
                 <FXCollections fx:factory="observableArrayList">
-                    <!-- MATCHES DB ENUM: 'Received', 'Dispatched', 'Shipped', 'Delivered' -->
                     <String fx:value="ALL"/>
-                    <String fx:value="Received"/>
+                    <String fx:value="Pending"/>
                     <String fx:value="Dispatched"/>
                     <String fx:value="Shipped"/>
                     <String fx:value="Delivered"/>
@@ -39,17 +38,19 @@
                 style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5 15; -fx-cursor: hand;"/>
     </HBox>
 
-    <!-- Orders Table -->
+    <!-- Orders Table - Scrollable -->
     <TableView fx:id="ordersTable" VBox.vgrow="ALWAYS"
+               maxHeight="Infinity"
                style="-fx-font-size: 11px; -fx-background-color: white; -fx-border-color: #dcdcdc; -fx-border-width: 1;">
         <columns>
-            <TableColumn fx:id="colId" text="Order ID" prefWidth="80"/>
+            <TableColumn fx:id="colId" text="Order ID" prefWidth="90"/>
             <TableColumn fx:id="colDate" text="Date" prefWidth="100"/>
-            <TableColumn fx:id="colCustomer" text="Customer" prefWidth="150"/>
-            <TableColumn fx:id="colAddress" text="Delivery Address" prefWidth="200"/>
-            <TableColumn fx:id="colAmount" text="Total (£)" prefWidth="80"/>
-            <TableColumn fx:id="colStatus" text="Status" prefWidth="100"/>
-            <TableColumn fx:id="colPayment" text="Payment" prefWidth="100"/>
+            <TableColumn fx:id="colCustomer" text="Customer Email" prefWidth="180"/>
+            <TableColumn fx:id="colDescription" text="Items Ordered" prefWidth="220"/>
+            <TableColumn fx:id="colAddress" text="Delivery Address" prefWidth="180"/>
+            <TableColumn fx:id="colAmount" text="Total (£)" prefWidth="90"/>
+            <TableColumn fx:id="colStatus" text="Status" prefWidth="110"/>
+            <TableColumn fx:id="colPayment" text="Payment Method" prefWidth="120"/>
             <TableColumn fx:id="colAction" text="Actions" prefWidth="120"/>
         </columns>
         <columnResizePolicy>
@@ -58,5 +59,5 @@
     </TableView>
 
     <!-- Info Label -->
-    <Label fx:id="infoLabel" style="-fx-text-fill: green; -fx-font-weight: bold;"/>
+    <Label fx:id="infoLabel" style="-fx-text-fill: #27ae60; -fx-font-weight: bold;"/>
 </VBox>

@@ -31,7 +31,7 @@
                         onAction="#showPOS">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="🛒" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -47,7 +47,7 @@
                         onAction="#showInventory">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="📦" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -63,7 +63,7 @@
                         onAction="#showSuppliers">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="🚚" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -80,7 +80,7 @@
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
                             <!-- Optional Icon -->
-                            <Label text="🌐" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px;"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px;"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -96,7 +96,7 @@
                         onAction="#showCustomers">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="👤" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -112,7 +112,7 @@
                         onAction="#showDiscountSettings">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="💸" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -128,7 +128,7 @@
                         onAction="#showTemplates">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="📄" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -144,7 +144,7 @@
                         onAction="#showAdmin">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="⚙" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -160,7 +160,7 @@
                         onAction="#showReports">
                     <graphic>
                         <HBox spacing="8" alignment="CENTER_LEFT">
-                            <Label text="📊" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                            <Label text="" style="-fx-text-fill: #95a5a6; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         </HBox>
                     </graphic>
                     <styleClass>
@@ -182,7 +182,7 @@
                     style="-fx-background-color: #c0392b; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 4;">
                 <graphic>
                     <HBox spacing="8" alignment="CENTER">
-                        <Label text="⏻" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
+                        <Label text="" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-family: 'Arial';"/>
                         <Label text="Logout" style="-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold"/>
                     </HBox>
                 </graphic>

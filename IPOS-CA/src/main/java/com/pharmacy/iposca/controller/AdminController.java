@@ -1,19 +1,13 @@
 package com.pharmacy.iposca.controller;
-
 import com.pharmacy.iposca.db.DatabaseConnector;
 import com.pharmacy.iposca.model.User;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.controlsfx.control.tableview2.filter.filtereditor.SouthFilter;
-
 import javax.print.DocFlavor;
 import java.sql.*;
 
-/**
- * All user data is loaded from and saved to database
- */
 public class AdminController {
-
     private static AdminController instance;
     private ObservableList<User> users = FXCollections.observableArrayList();
 
@@ -28,12 +22,8 @@ public class AdminController {
         return instance;
     }
 
-    /**
-     * Method to load users from database
-     */
     private void loadUsersFromDatabase() {
         String sql = "SELECT id, username, full_name, password, role, active FROM users";
-
         try (Connection conn = DatabaseConnector.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -52,18 +42,13 @@ public class AdminController {
             }
 
             System.out.println("Loaded " + users.size() + " users from database");
-
         } catch (SQLException e) {
             System.err.println("Error loading users: " + e.getMessage());
             e.printStackTrace();
-            // Fallback to mock data if database fails
             loadMockUsers();
         }
     }
 
-    /**
-     * Fallback mock data if database connection fails
-     */
     private void loadMockUsers() {
         users.addAll(
                 new User(1001, "admin", "System Administrator", "admin123", User.Admin),
@@ -77,11 +62,7 @@ public class AdminController {
         return users;
     }
 
-    /**
-     * Create new user and save to database
-     */
     public boolean createUser(String username, String fullName, String password, String role) {
-        // Check if username exists
         for (User u : users) {
             if (u.getUsername().equals(username)) {
                 System.out.println("Username already exists: " + username);
@@ -90,7 +71,6 @@ public class AdminController {
         }
 
         String sql = "INSERT INTO users (username, full_name, password, role, active) VALUES (?, ?, ?, ?, ?)";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -103,37 +83,29 @@ public class AdminController {
             int rowsAffected = stmt.executeUpdate();
 
             if (rowsAffected > 0) {
-                // Get generated ID
                 ResultSet rs = stmt.getGeneratedKeys();
                 int newId = 0;
                 if (rs.next()) {
                     newId = rs.getInt(1);
                 }
 
-                // Add to local cache
                 User newUser = new User(newId, username, fullName, password, role);
                 users.add(newUser);
 
                 System.out.println("User created: " + username);
                 return true;
             }
-
         } catch (SQLException e) {
             System.err.println("Error creating user: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
-    /**
-     * Delete user from database
-     */
     public boolean deleteUser(User user) {
         if (user == null) return false;
 
         String sql = "DELETE FROM users WHERE id = ?";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -145,33 +117,27 @@ public class AdminController {
                 System.out.println("User deleted: " + user.getUsername());
                 return true;
             }
-
         } catch (SQLException e) {
             System.err.println("Error deleting user: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 
-    /**
-     * Method to promote/demote roles
-     */
     public boolean updateRole(User user, String newRole) {
         if (user == null) {
             return false;
         }
-        String sql = "UPDATE users SET role = ? WHERE id = ?"; //updates role column in users table
 
+        String sql = "UPDATE users SET role = ? WHERE id = ?";
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, newRole); //sets the new role
-            stmt.setInt(2, user.getId()); //sets the user id to the prepared stm
+            stmt.setString(1, newRole);
+            stmt.setInt(2, user.getId());
 
             int rowsAffected = stmt.executeUpdate();
 
-            //if the update was successful, update the local memory
             if (rowsAffected > 0) {
                 user.setRole(newRole);
                 System.out.println("User role updated: " + user.getUsername() + " = " + newRole);
@@ -184,15 +150,10 @@ public class AdminController {
         return false;
     }
 
-
-    /**
-     * Toggle user active status and save to database
-     */
     public boolean toggleStatus(User user) {
         if (user == null) return false;
 
         String sql = "UPDATE users SET active = ? WHERE id = ?";
-
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -207,12 +168,10 @@ public class AdminController {
                 System.out.println("User status updated: " + user.getUsername() + " = " + newStatus);
                 return true;
             }
-
         } catch (SQLException e) {
             System.err.println("Error updating user status: " + e.getMessage());
             e.printStackTrace();
         }
-
         return false;
     }
 }
