@@ -11,6 +11,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.time.format.DateTimeFormatter;
 
+/**
+ * This UI class handles the Portal Orders module
+ */
 public class PortalOrdersView {
 
     @FXML private TableView<OnlineOrder> ordersTable;
@@ -83,8 +86,8 @@ public class PortalOrdersView {
                     setGraphic(null);
                 } else {
                     OnlineOrder order = getTableView().getItems().get(getIndex());
-                    // FIXED: Check against DB value 'Delivered' (Capitalized)
-                    // Show button for 'Received', 'Dispatched', 'Shipped'. Hide for 'Delivered'.
+
+                    //Showing button for 'Received', 'Dispatched', 'Shipped'. Hidden for 'Delivered'.
                     if (!"Delivered".equals(order.getStatus())) {
                         fulfilBtn.setVisible(true);
                         fulfilBtn.setDisable(false);
@@ -109,7 +112,7 @@ public class PortalOrdersView {
     }
 
     private void setupFilters() {
-        // Search Filter
+        //Search Filter
         searchField.textProperty().addListener((obs, old, newVal) -> {
             filteredOrders.setPredicate(order -> {
                 if (newVal == null || newVal.isEmpty()) return true;
@@ -120,13 +123,12 @@ public class PortalOrdersView {
             });
         });
 
-        // Status Filter
+        //Status Filter
         statusFilter.getSelectionModel().select("ALL");
         statusFilter.setOnAction(e -> {
             String selected = statusFilter.getValue();
             filteredOrders.setPredicate(order -> {
                 if ("ALL".equals(selected)) return true;
-                // FIXED: Match exact DB ENUM strings ('Received', 'Dispatched', etc.)
                 return selected.equals(order.getStatus());
             });
         });
@@ -138,6 +140,9 @@ public class PortalOrdersView {
         infoLabel.setText("Orders refreshed.");
     }
 
+    /**
+     * Confirms delivery action then marks the order as delivered
+     */
     private void handleMarkDelivered(OnlineOrder order) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Fulfil Order");
@@ -146,14 +151,13 @@ public class PortalOrdersView {
 
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                // FIXED: Pass 'Delivered' to match DB ENUM
                 if (puLogic.markAsDelivered(order.getOrderId())) {
                     order.setStatus("Delivered");
                     ordersTable.refresh();
 
                     Alert success = new Alert(Alert.AlertType.INFORMATION);
                     success.setTitle("Success");
-                    success.setContentText("Order #" + order.getOrderId() + " marked as delivered successfully.");
+                    success.setContentText("Order: " + order.getOrderId() + " marked as delivered successfully.");
                     success.showAndWait();
                 } else {
                     Alert error = new Alert(Alert.AlertType.ERROR);

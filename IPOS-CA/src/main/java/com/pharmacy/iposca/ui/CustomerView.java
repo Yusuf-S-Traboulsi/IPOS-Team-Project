@@ -17,7 +17,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Customer View Controller - FXML-based MVC
+ * UI class for Customer Management
  */
 public class CustomerView {
 
@@ -27,19 +27,19 @@ public class CustomerView {
     @FXML private TableColumn<Customer, String> titleCol, nameCol, emailCol, addressCol, townCol, postcodeCol, statusCol, rem1Col, rem2Col;
     @FXML private TableColumn<Customer, Double> limitCol, debtCol;
 
-    // Registration Controls
+    //Registration Controls
     @FXML private ComboBox<String> titleCombo;
     @FXML private TextField nameInput, emailInput, addressInput, townInput, postcodeInput, limitInput;
 
-    // Feedback & Actions
+    //Feedback & Actions
     @FXML private Label informationLabel;
     @FXML private Button unsuspendButton;
 
-    // Payment History Controls
+    //Payment History Controls
     @FXML private Label selectedCustomerLabel;
     @FXML private TableView<PaymentRecord> paymentHistoryTable;
 
-    // Payment History Columns (Defined in FXML)
+    //Payment History Columns
     @FXML private TableColumn<PaymentRecord, LocalDate> payDateCol;
     @FXML private TableColumn<PaymentRecord, Double> payAmountCol;
     @FXML private TableColumn<PaymentRecord, String> payTypeCol;
@@ -55,7 +55,7 @@ public class CustomerView {
             titleCombo.getItems().addAll("Mr.", "Ms.", "Mrs.", "Dr.");
         }
 
-        // Setup Customer Table Columns
+        //Customer Table Columns
         if (idCol != null) idCol.setCellValueFactory(new PropertyValueFactory<>("id"));
         if (titleCol != null) titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
         if (nameCol != null) nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
@@ -69,13 +69,14 @@ public class CustomerView {
         if (rem1Col != null) rem1Col.setCellValueFactory(new PropertyValueFactory<>("status1stReminder"));
         if (rem2Col != null) rem2Col.setCellValueFactory(new PropertyValueFactory<>("status2ndReminder"));
 
+        //Configuring editable columns
         if (customerTable != null) {
             customerTable.setEditable(true);
             setupEditableColumns();
             customerTable.setItems(logic.getCustomerData());
             setupSearchFilter();
 
-            // Link selection to payment history
+            //Link selection to payment history
             customerTable.getSelectionModel().selectedItemProperty()
                     .addListener((obs, oldVal, newVal) -> {
                         if (newVal != null) loadPaymentHistory(newVal);
@@ -87,7 +88,9 @@ public class CustomerView {
         System.out.println("CustomerView initialized with " + logic.getCustomerData().size() + " customers");
     }
 
+
     private void setupEditableColumns() {
+        //update local object
         setupEditableStringColumn(titleCol, "title");
         setupEditableStringColumn(nameCol, "name");
         setupEditableStringColumn(emailCol, "email");
@@ -101,11 +104,14 @@ public class CustomerView {
                 Customer c = e.getRowValue();
                 c.setCreditLimit(e.getNewValue());
                 logic.updateCustomerField(c, "credit_limit", e.getNewValue());
-                customerTable.refresh();
+                customerTable.refresh(); //Refreshes the table to reflect the updated limit
             });
         }
     }
 
+    /**
+     * Method to setup editable string columns
+     */
     private void setupEditableStringColumn(TableColumn<Customer, String> col, String property) {
         if (col == null) return;
         col.setCellFactory(TextFieldTableCell.forTableColumn());
@@ -120,7 +126,7 @@ public class CustomerView {
                 case "town": c.setTown(newValue); break;
                 case "postcode": c.setPostcode(newValue); break;
             }
-            logic.updateCustomerField(c, property, newValue);
+            logic.updateCustomerField(c, property, newValue); //Update the database with the new value
             customerTable.refresh();
         });
     }
@@ -182,6 +188,7 @@ public class CustomerView {
                 return;
             }
 
+            //Adding customer to database
             if (logic.addCustomer(title, name, email, address, town, postcode, limit)) {
                 clearInputs();
                 customerTable.refresh();
@@ -198,6 +205,7 @@ public class CustomerView {
 
     @FXML
     private void handleDeleteCustomer() {
+        //Deleting customer from database
         Customer selected = customerTable != null ? customerTable.getSelectionModel().getSelectedItem() : null;
         if (selected == null) {
             showInfo("Please select a customer first.", true);
@@ -332,8 +340,8 @@ public class CustomerView {
 
         File reminder = logic.generateFirstReminder(selected);
         if (reminder != null) {
-            openFile(reminder, selected.getName() + " - DEMO 1st Reminder");
-            showInfo("DEMO: 1st Reminder generated (Checks bypassed).", false);
+            openFile(reminder, selected.getName() + " - Demo 1st Reminder");
+            showInfo("Demo: 1st Reminder generated", false);
         } else {
             showInfo("Failed to generate demo reminder.", true);
         }
@@ -350,7 +358,7 @@ public class CustomerView {
         File reminder = logic.generateSecondReminder(selected);
         if (reminder != null) {
             openFile(reminder, selected.getName() + " - DEMO 2nd Reminder");
-            showInfo("DEMO: 2nd Reminder generated (Checks bypassed).", false);
+            showInfo("DEMO: 2nd Reminder generated", false);
         } else {
             showInfo("Failed to generate demo reminder.", true);
         }

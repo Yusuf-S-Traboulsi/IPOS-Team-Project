@@ -1,6 +1,9 @@
 package com.pharmacy.iposca.model;
 import javafx.beans.property.*;
 
+/**
+ * Class representing a user in the system.
+ */
 public class User {
     private final IntegerProperty id = new SimpleIntegerProperty();
     private final StringProperty username = new SimpleStringProperty();
@@ -22,7 +25,7 @@ public class User {
         this.isActive.set(true);
     }
 
-    // Getters and Setters
+    //Getters and Setters
     public int getId() { return id.get(); }
     public String getUsername() { return username.get(); }
     public void setUsername(String username) { this.username.set(username); }

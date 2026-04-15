@@ -7,6 +7,9 @@ import java.awt.Desktop;
 import java.io.File;
 import java.time.LocalDate;
 
+/**
+ * This UI class handles the Reporting module
+ */
 public class ReportingView {
     @FXML private DatePicker startDatePicker, endDatePicker;
     @FXML private Label statusLabel;
@@ -20,7 +23,7 @@ public class ReportingView {
     public void initialize() {
         reportLogic = new ReportController(inventory, customers, sales);
 
-        // Set default date range: current month
+        //Setting default date range to current month
         LocalDate today = LocalDate.now();
         startDatePicker.setValue(today.withDayOfMonth(1));
         endDatePicker.setValue(today);
@@ -28,6 +31,7 @@ public class ReportingView {
 
     @FXML
     private void generateTurnoverReport() {
+        //Generates turnover report with validated date range
         runReport(() -> {
             LocalDate start = startDatePicker.getValue();
             LocalDate end = endDatePicker.getValue();
@@ -45,6 +49,7 @@ public class ReportingView {
 
     @FXML
     private void generateDebtReport() {
+        //Generates the debt change report with validated date range
         runReport(() -> {
             LocalDate start = startDatePicker.getValue();
             LocalDate end = endDatePicker.getValue();
@@ -67,6 +72,9 @@ public class ReportingView {
         }
     }
 
+    /**
+     * Helper method to run a report and open it in the default browser
+     */
     private void runReport(ReportGenerator generator, String reportName) {
         try {
             File report = generator.generate();

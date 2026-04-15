@@ -13,8 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Report Controller - Generates various business reports
- * All reports use data from ipos_ca database
+ * Controller class for generating reports
  */
 public class ReportController {
 
@@ -28,6 +27,9 @@ public class ReportController {
         this.sales = sal;
     }
 
+    /**
+     * Generates HTML turnover report for sales within the date range
+     */
     public File generateTurnoverReport(LocalDate startDate, LocalDate endDate) {
         File file = new File("TurnoverReport_" + startDate + "_to_" + endDate + ".html");
         StringBuilder html = new StringBuilder();
@@ -50,7 +52,7 @@ public class ReportController {
 
         buildReportHeader(html, "Turnover Report", startDate, endDate);
 
-        // Summary Section
+        //Summary section
         html.append("<div class='summary-box'>\n")
                 .append("<h3>Summary</h3>\n")
                 .append("<table>\n")
@@ -60,7 +62,7 @@ public class ReportController {
                 .append("</table>\n")
                 .append("</div>\n");
 
-        // Transaction Details
+        //Transaction details
         html.append("<h3>Transaction Details</h3>\n")
                 .append("<table>\n")
                 .append("<tr><th>ID</th><th>Date</th><th>Customer</th><th>Payment</th><th>Amount</th></tr>\n");
@@ -81,6 +83,9 @@ public class ReportController {
         return file;
     }
 
+    /**
+     * Generates stock report with VAT breakdowns and totals
+     */
     public File generateStockReport() {
         File file = new File("StockReport_" + LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
         StringBuilder html = new StringBuilder();
@@ -128,6 +133,9 @@ public class ReportController {
         return file;
     }
 
+    /**
+     * Generates debt change HTML report with customer details
+     */
     public File generateDebtChangeReport(LocalDate startDate, LocalDate endDate) {
         File file = new File("DebtChangeReport_" + startDate + "_to_" + endDate + ".html");
         StringBuilder html = new StringBuilder();

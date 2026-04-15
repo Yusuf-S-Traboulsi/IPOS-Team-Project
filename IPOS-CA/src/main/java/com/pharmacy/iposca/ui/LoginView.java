@@ -11,12 +11,15 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 
+/**
+ * This UI class handles the Login module
+ */
 public class LoginView {
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
     @FXML private Label errorLabel;
 
-    // Connect to the same list the Admin uses
+    //Connecting to the same list the Admin uses
     private AdminController adminController = AdminController.getInstance();
     private AuthenticationService authService = new AuthenticationService(adminController);
 
@@ -33,6 +36,10 @@ public class LoginView {
         }
     }
 
+    /**
+     * Method to navigate to the MainDashboard
+     * Loads the MainDashboard with the appropriate permissions and changes views accordingly
+     */
     private void navigateToDashboard(User user) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/pharmacy/iposca/MainDashboard.fxml"));

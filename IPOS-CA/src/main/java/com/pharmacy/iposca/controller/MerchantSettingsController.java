@@ -13,8 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Merchant Settings Controller - Manages templates and company identity
- * Access: Manager role only
+ * This class manages templates and company identity
  */
 public class MerchantSettingsController {
 
@@ -73,7 +72,7 @@ public class MerchantSettingsController {
                 merchantSettings.setPhone("0208 778 0124");
                 merchantSettings.setFax("0208 778 0125");
                 merchantSettings.setEmail("accounts@infopharma.co.uk");
-                merchantSettings.setDirectorName("A. Petite");
+                merchantSettings.setDirectorName("Mr. Lancaster");
             }
 
         } catch (SQLException e) {
@@ -180,12 +179,15 @@ public class MerchantSettingsController {
         try (Connection conn = DatabaseConnector.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
+            //Update or insert based on template ID
             if (template.getId() > 0) {
                 stmt.setString(1, template.getSubjectTemplate());
                 stmt.setString(2, template.getBodyTemplate());
                 stmt.setString(3, template.getFooterTemplate());
                 stmt.setBoolean(4, template.isActive());
                 stmt.setInt(5, template.getId());
+
+            //Inserts new template
             } else {
                 stmt.setString(1, template.getTemplateName());
                 stmt.setString(2, template.getTemplateType());

@@ -31,10 +31,7 @@ public class CAController implements IInventoryAPI {
         this.inventoryController = InventoryController.getInstance();
     }
 
-    // ============================================================
     // IInventoryAPI Interface Implementation (Read-Only)
-    // ============================================================
-
     @Override
     public Product[] searchStock(String criteria) {
         if (criteria == null || criteria.trim().isEmpty()) {
@@ -77,10 +74,7 @@ public class CAController implements IInventoryAPI {
         return (product != null) ? (float) product.getPrice() : -1.0f;
     }
 
-    // ============================================================
     // Additional Public Methods for Internal Use
-    // ============================================================
-
     /**
      * Get all products in inventory
      * @return Array of all Product objects
@@ -133,10 +127,7 @@ public class CAController implements IInventoryAPI {
         return lowStockProducts.toArray(new Product[0]);
     }
 
-    // ============================================================
     // Stock Management Methods (Internal Use Only)
-    // ============================================================
-
     /**
      * Decrement stock for a product (used when sale is completed)
      *
@@ -277,11 +268,6 @@ public class CAController implements IInventoryAPI {
 
         return false;
     }
-
-    // ============================================================
-    // Private Helper Methods
-    // ============================================================
-
     private Product findProductById(int itemID) {
         ObservableList<Product> products = inventoryController.getProducts();
         if (products == null) return null;
@@ -329,10 +315,7 @@ public class CAController implements IInventoryAPI {
         }
     }
 
-    // ============================================================
     // Integration Guide for IPOS-PU Team
-    // ============================================================
-
     /**
      * INTEGRATION GUIDE FOR IPOS-PU TEAM
      *

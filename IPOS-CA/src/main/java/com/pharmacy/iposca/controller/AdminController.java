@@ -10,7 +10,7 @@ import javax.print.DocFlavor;
 import java.sql.*;
 
 /**
- * All user data is loaded from and saved to MySQL database
+ * All user data is loaded from and saved to database
  */
 public class AdminController {
 
@@ -29,7 +29,7 @@ public class AdminController {
     }
 
     /**
-     * Load users from MySQL database
+     * Method to load users from database
      */
     private void loadUsersFromDatabase() {
         String sql = "SELECT id, username, full_name, password, role, active FROM users";
@@ -164,9 +164,9 @@ public class AdminController {
         String sql = "UPDATE users SET role = ? WHERE id = ?"; //updates role column in users table
 
         try (Connection conn = DatabaseConnector.getConnection();
-        PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1,newRole); //sets the new role
+            stmt.setString(1, newRole); //sets the new role
             stmt.setInt(2, user.getId()); //sets the user id to the prepared stm
 
             int rowsAffected = stmt.executeUpdate();
@@ -210,36 +210,6 @@ public class AdminController {
 
         } catch (SQLException e) {
             System.err.println("Error updating user status: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        return false;
-    }
-
-    /**
-     * Update user password in database - TEST FEATURE - TRY IMPLEMENT IF WANTED BUT NOT TRULY NEEDED
-     */
-    public boolean updatePassword(User user, String newPassword) {
-        if (user == null) return false;
-
-        String sql = "UPDATE users SET password = ? WHERE id = ?";
-
-        try (Connection conn = DatabaseConnector.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, newPassword);
-            stmt.setInt(2, user.getId());
-
-            int rowsAffected = stmt.executeUpdate();
-
-            if (rowsAffected > 0) {
-                user.setPassword(newPassword);
-                System.out.println("Password updated for: " + user.getUsername());
-                return true;
-            }
-
-        } catch (SQLException e) {
-            System.err.println("Error updating password: " + e.getMessage());
             e.printStackTrace();
         }
 

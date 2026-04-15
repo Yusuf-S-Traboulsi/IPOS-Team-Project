@@ -3,34 +3,21 @@ package com.pharmacy.iposca.model;
 import java.time.LocalDate;
 
 /**
- * Model representing an order received from the IPOS-PU Portal.
- * Maps directly to the 'online_sales' table in the 'ipos_pu' database.
- *
- * Columns mapped:
- * - id
- * - sale_reference (mapped to customerEmail for display/search)
- * - customer_type (mapped to customerName for display)
- * - delivery_address
- * - delivery_town (combined with address in UI logic)
- * - delivery_postcode
- * - total_amount
- * - order_status
- * - sale_date
- * - payment_method
+ * Model class representing an order received from the IPOS-PU Portal.
  */
 public class OnlineOrder {
     private final int orderId;
-    private final String customerEmail;      // Mapped from 'sale_reference' or 'customer_id'
-    private final String customerName;       // Mapped from 'customer_type'
-    private final String deliveryAddress;    // Combined Address + Town
+    private final String customerEmail;
+    private final String customerName;
+    private final String deliveryAddress;
     private final String postcode;
     private final double totalAmount;
-    private String status;                   // Mutable for updates
-    private final LocalDate orderDate;       // Mapped from 'sale_date'
+    private String status;// Mutable for updates
+    private final LocalDate orderDate;
     private final String paymentMethod;
 
     /**
-     * Constructor matching the 9 columns selected from the database.
+     * Constructor matching the 9 columns from database.
      */
     public OnlineOrder(int orderId, String email, String name, String address,
                        String postcode, double amount, String status,
@@ -46,8 +33,7 @@ public class OnlineOrder {
         this.paymentMethod = paymentMethod;
     }
 
-    // --- Getters ---
-
+    //Getter Methods
     public int getOrderId() {
         return orderId;
     }
@@ -84,8 +70,7 @@ public class OnlineOrder {
         return paymentMethod;
     }
 
-    // --- Setters (Only Status needs to be mutable for the "Mark as Delivered" feature) ---
-
+    //Setters, only for updating status
     public void setStatus(String status) {
         this.status = status;
     }

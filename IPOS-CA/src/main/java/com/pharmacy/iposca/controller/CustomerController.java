@@ -14,8 +14,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Customer Controller - Full MySQL Database Integration
- */
+ * This class handles all customer data that is loaded from and saved to the database
+ * Includes discount plan management (Fixed & Flexible/variable plans) */
 public class CustomerController {
     private static CustomerController instance;
     private final ObservableList<Customer> customerData = FXCollections.observableArrayList();
@@ -33,7 +33,6 @@ public class CustomerController {
         }
         return instance;
     }
-
     private void loadCustomersFromDatabase() {
         String sql = "SELECT * FROM customers ORDER BY id";
         try (Connection conn = DatabaseConnector.getConnection();
@@ -59,6 +58,7 @@ public class CustomerController {
                 c.setDiscountRate(rs.getDouble("discount_rate"));
                 c.setMonthlyPurchaseTotal(rs.getDouble("monthly_purchase_total"));
 
+                //loading date fields
                 try {
                     Date d1 = rs.getDate("date_1st_reminder");
                     Date d2 = rs.getDate("date_2nd_reminder");
@@ -74,9 +74,9 @@ public class CustomerController {
                 customerData.add(c);
             }
 
-            System.out.println("✅ Loaded " + customerData.size() + " customers from database");
+            System.out.println("Loaded " + customerData.size() + " customers from database");
         } catch (SQLException e) {
-            System.err.println("❌ Error loading customers: " + e.getMessage());
+            System.err.println("Error loading customers: " + e.getMessage());
             e.printStackTrace();
             loadMockCustomers();
         }
@@ -84,6 +84,7 @@ public class CustomerController {
 
     private void loadPaymentHistory() {
         String sql = "SELECT * FROM customer_payments ORDER BY payment_date DESC";
+        // Loads and clears payment history from database query
         try (Connection conn = DatabaseConnector.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -100,12 +101,15 @@ public class CustomerController {
                 ));
             }
 
-            System.out.println("✅ Loaded " + paymentHistory.size() + " payment records");
+            System.out.println("Loaded " + paymentHistory.size() + " payment records");
         } catch (SQLException e) {
-            System.err.println("⚠️ Payment history table may not exist: " + e.getMessage());
+            System.err.println("Payment history table may not exist: " + e.getMessage());
         }
     }
 
+    /**
+     * Fallback mock data if database connection fails
+     */
     private void loadMockCustomers() {
         customerData.addAll(
                 new Customer(101, "Mr.", "John Smith", "john@email.com", "123 High St", "London", "SW1A 1AA", 500.00, 0.00),
@@ -158,20 +162,22 @@ public class CustomerController {
             stmt.setDouble(15, 0.0);
 
             int rowsAffected = stmt.executeUpdate();
-
             if (rowsAffected > 0) {
                 Customer newCustomer = new Customer(nextId, title, name, email, address, town, postcode, limit, 0.0);
                 customerData.add(newCustomer);
-                System.out.println("✅ Customer added to database: " + name);
+                System.out.println("Customer added to database: " + name);
                 return true;
             }
         } catch (SQLException e) {
-            System.err.println("❌ Error adding customer: " + e.getMessage());
+            System.err.println("Error adding customer: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
     }
 
+    /**
+     * This method updates customer field and saves it to database
+     */
     public boolean updateCustomerField(Customer customer, String fieldName, Object newValue) {
         if (customer == null) return false;
         String sql = "UPDATE customers SET " + fieldName + " = ? WHERE id = ?";
@@ -195,6 +201,9 @@ public class CustomerController {
         return false;
     }
 
+    /**
+     * This method updates all customer data and saves it to database
+     */
     public boolean updateCustomer(Customer customer) {
         if (customer == null) return false;
         String sql = "UPDATE customers SET title = ?, name = ?, email = ?, address = ?, town = ?, postcode = ?, " +
@@ -243,6 +252,9 @@ public class CustomerController {
         return false;
     }
 
+    /**
+     * Method to delete customer from database
+     */
     public boolean deleteCustomer(Customer c) {
         if (c == null) return false;
         if (c.getCurrentDebt() > 0) {
@@ -267,6 +279,9 @@ public class CustomerController {
         return false;
     }
 
+    /**
+     * Method to record a payment for a customer and update the database
+     */
     public boolean recordPayment(int customerId, double amount, String paymentType,
                                  String paymentDetails, String reference) {
         String sql = "INSERT INTO customer_payments (customer_id, payment_date, amount, " +
@@ -284,16 +299,19 @@ public class CustomerController {
 
             if (rowsAffected > 0) {
                 loadPaymentHistory();
-                System.out.println("✅ Payment recorded for customer ID: " + customerId);
+                System.out.println("Payment recorded for customer ID: " + customerId);
                 return true;
             }
         } catch (SQLException e) {
-            System.err.println("❌ Error recording payment: " + e.getMessage());
+            System.err.println("Error recording payment: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
     }
 
+    /**
+     * Method to process a debt payment for a customer
+     */
     public boolean processDebtPayment(Customer customer, double amount) {
         if (customer == null || amount <= 0) return false;
         double currentDebt = customer.getCurrentDebt();
@@ -310,7 +328,7 @@ public class CustomerController {
             if (!"In Default".equals(customer.getAccountStatus())) {
                 customer.setAccountStatus("Normal");
             }
-            System.out.println("✅ Debt cleared for " + customer.getName() + " - Status reset to Normal");
+            System.out.println("Debt cleared for " + customer.getName() + " Status reset to Normal");
         }
         return updateCustomer(customer);
     }
@@ -318,7 +336,7 @@ public class CustomerController {
     public boolean canUnsuspendCustomer(Customer customer) {
         if (customer == null) return false;
         if (customer.getCurrentDebt() > 0 && "Suspended".equals(customer.getAccountStatus())) {
-            System.out.println("⚠️ Cannot unsuspend " + customer.getName() + " - Outstanding debt: £" + customer.getCurrentDebt());
+            System.out.println("Cannot unsuspend " + customer.getName() + " Outstanding debt: £" + customer.getCurrentDebt());
             return false;
         }
         return true;
@@ -347,9 +365,14 @@ public class CustomerController {
         }
     }
 
+    /**
+     * Method to process debt reminders for a customer
+     * */
     public void processReminders(Customer customer) {
         if (customer == null || customer.getCurrentDebt() <= 0) return;
         LocalDate today = LocalDate.now();
+
+        //Process 1st reminder
         if ("due".equals(customer.getStatus1stReminder())) {
             generateFirstReminder(customer);
             customer.setStatus1stReminder("sent");
@@ -357,6 +380,8 @@ public class CustomerController {
             updateCustomer(customer);
             System.out.println("1st reminder processed for: " + customer.getName());
         }
+
+        //Process 2nd reminder
         if ("due".equals(customer.getStatus2ndReminder())) {
             LocalDate date2nd = customer.getDate2ndReminder();
             if (date2nd != null && !date2nd.isAfter(today)) {
@@ -368,6 +393,9 @@ public class CustomerController {
         }
     }
 
+    /**
+     * Method to reset reminders for a customer when payment is made
+     */
     public void resetRemindersOnPayment(Customer customer) {
         if (customer == null) return;
         if (!"In Default".equals(customer.getAccountStatus())) {
@@ -378,6 +406,9 @@ public class CustomerController {
         }
     }
 
+    /**
+     * Method to set discount plan for a customer and save it to database
+     */
     public boolean setDiscountPlan(Customer customer, String planType, double rate) {
         if (customer == null) return false;
         if (!"NONE".equals(planType) && !"FIXED".equals(planType) && !"FLEXIBLE".equals(planType)) {
@@ -391,6 +422,9 @@ public class CustomerController {
         return true;
     }
 
+    /**
+     * Resets all customers' monthly purchase totals, resets at the start of each month
+     */
     public void resetAllMonthlyPurchaseTotals() {
         for (Customer c : customerData) {
             c.resetMonthlyPurchaseTotal();
@@ -399,6 +433,9 @@ public class CustomerController {
         System.out.println("All monthly purchase totals reset");
     }
 
+    /**
+     * Add purchase amount to customer's monthly total
+     */
     public void addPurchaseToMonthlyTotal(Customer customer, double amount) {
         if (customer != null && !"NONE".equals(customer.getDiscountPlanType())) {
             customer.addToMonthlyPurchaseTotal(amount);
@@ -407,10 +444,18 @@ public class CustomerController {
         }
     }
 
+    /**
+     * Updates custoner debt and saves it to database
+     */
     public boolean updateCustomerDebt(Customer customer) {
         return updateCustomer(customer);
     }
 
+    //Report Methods
+
+    /**
+     * Method to generate a report of all customers including the html file
+     */
     public File generateMonthlyStatement(Customer customer) {
         if (customer == null || customer.getCurrentDebt() <= 0) return null;
         int invoiceNum = invoiceCounter++;
@@ -452,7 +497,7 @@ public class CustomerController {
     }
 
     /**
-     * Generate 1st Reminder - REMOVED DEBT CHECK FOR DEMO PURPOSES
+     * Generates first reminder html file for overdue customer with a 7-day due date
      */
     public File generateFirstReminder(Customer customer) {
         if (customer == null) return null;
@@ -498,7 +543,7 @@ public class CustomerController {
     }
 
     /**
-     * Generate 2nd Reminder - REMOVED DEBT CHECK FOR DEMO PURPOSES
+     * Generates second reminder html file for overdue customer with the unique invoice number
      */
     public File generateSecondReminder(Customer customer) {
         if (customer == null) return null;
@@ -610,6 +655,10 @@ public class CustomerController {
         return file;
     }
 
+    /**
+     * Represents a record of a payment made by a customer.
+     * This inner class is used to store and retrieve details of individual payments.
+     */
     public static class PaymentRecord {
         private final int id;
         private final int customerId;

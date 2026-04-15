@@ -26,7 +26,7 @@ public class MainDashboard {
     }
 
     /**
-     * Load POS/Sales screen - now its actually an EPOS but who am i to complain bobby
+     * Load POS/Sales screen
      */
     @FXML
     private void showPOS() {
@@ -70,15 +70,12 @@ public class MainDashboard {
      */
     @FXML
     private void showDiscountSettings() {loadScreen("com/pharmacy/iposca/discount_settings.fxml"); }
-       /* try {
-            DiscountSettingsView discountView = new DiscountSettingsView();
-            contentArea.getChildren().setAll(discountView);
-        } catch (Exception e) {
-            System.err.println("Could not load Discount Settings");
-            e.printStackTrace();
-        }
-    }
 
+    /**
+     * Load PU online sale communication screen
+     */
+    @FXML
+    private void showOnlinePortal() {loadScreen("com/pharmacy/iposca/PUView.fxml");}
     /**
      * Load Merchant/Template Settings screen
      */
@@ -93,20 +90,11 @@ public class MainDashboard {
         }
     }
 
-    @FXML
-    private void showOnlineOrders() {
-        try {
-            MerchantSettingsView templatesView = new MerchantSettingsView();
-            contentArea.getChildren().setAll(templatesView);
-        } catch (Exception e) {
-            System.err.println("Could not load Template Settings");
-            e.printStackTrace();
-        }
-    }
+
 
     /**
      * Generic method to load FXML screens into the content area
-     * @param fxmlFile Path to the FXML file (e.g., "/com/pharmacy/iposca/InventoryView.fxml")
+     * @param fxmlFile Path to the FXML file
      */
     private void loadScreen(String fxmlFile) {
         try {
@@ -117,7 +105,7 @@ public class MainDashboard {
             System.err.println("   Error: " + e.getMessage());
             e.printStackTrace();
 
-            // Show error in content area
+            //Show error in the content area
             javafx.scene.control.Label errorLabel = new javafx.scene.control.Label(
                     "Error loading screen: " + fxmlFile + "\n" + e.getMessage()
             );

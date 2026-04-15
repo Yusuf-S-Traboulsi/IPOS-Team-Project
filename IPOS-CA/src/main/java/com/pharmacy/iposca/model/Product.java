@@ -4,8 +4,7 @@ import com.google.gson.annotations.Expose;
 import javafx.beans.property.*;
 
 /**
- * Product model for the pharmacy inventory system.
- * Uses JavaFX properties for UI binding and @Expose for API serialization.
+ * Class for representing a product.
  */
 public class Product {
     @Expose private final IntegerProperty id = new SimpleIntegerProperty();
@@ -28,7 +27,6 @@ public class Product {
         this.supplierItemId.set("");
     }
 
-    // ✅ NEW: Constructor with supplier_item_id
     public Product(int id, String name, double bulkCost, double markupRate, int stock,
                    int lowStockThreshold, String supplierItemId) {
         this.id.set(id);
@@ -41,7 +39,7 @@ public class Product {
         this.supplierItemId.set(supplierItemId);
     }
 
-    // ===== PROPERTY GETTERS (for JavaFX UI) =====
+    //Property getters for JavaFX binding
     public IntegerProperty idProperty() { return id; }
     public StringProperty nameProperty() { return name; }
     public DoubleProperty bulkCostProperty() { return bulkCost; }
@@ -49,9 +47,9 @@ public class Product {
     public DoubleProperty priceProperty() { return price; }
     public IntegerProperty stockProperty() { return stock; }
     public IntegerProperty lowStockThresholdProperty() { return lowStockThreshold; }
-    public StringProperty supplierItemIdProperty() { return supplierItemId; } // ✅ NEW
+    public StringProperty supplierItemIdProperty() { return supplierItemId; }
 
-    // ===== PLAIN VALUE GETTERS (for Gson/REST API) =====
+    //Getter Methods
     public int getId() { return id.get(); }
     public String getName() { return name.get(); }
     public double getBulkCost() { return bulkCost.get(); }
@@ -59,9 +57,9 @@ public class Product {
     public double getPrice() { return price.get(); }
     public int getStock() { return stock.get(); }
     public int getLowStockThreshold() { return lowStockThreshold.get(); }
-    public String getSupplierItemId() { return supplierItemId.get(); } // ✅ NEW
+    public String getSupplierItemId() { return supplierItemId.get(); }
 
-    // ===== SETTERS =====
+    //Setter Methods
     public void setId(int id) { this.id.set(id); }
     public void setName(String name) { this.name.set(name); }
     public void setBulkCost(double bulkCost) { this.bulkCost.set(bulkCost); }

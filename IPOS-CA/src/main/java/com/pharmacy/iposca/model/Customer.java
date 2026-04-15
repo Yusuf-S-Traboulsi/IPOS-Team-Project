@@ -4,8 +4,8 @@ import javafx.beans.property.*;
 import java.time.LocalDate;
 
 /**
- * Customer model for pharmacy account holders.
- * Includes discount plan support (Fixed & Flexible plans per briefing page 38).
+ * This class represents a customer in the system.
+ * Includes discount plan, Fixed & Flexible/Variable plans.
  */
 public class Customer {
     private final IntegerProperty id = new SimpleIntegerProperty();
@@ -24,6 +24,7 @@ public class Customer {
     private final ObjectProperty<LocalDate> date2ndReminder = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDate> oldestDebtDate = new SimpleObjectProperty<>();
 
+    // Discount Plan Fields
     private final StringProperty discountPlanType = new SimpleStringProperty("NONE");
     private final DoubleProperty discountRate = new SimpleDoubleProperty(0.0);
     private final DoubleProperty monthlyPurchaseTotal = new SimpleDoubleProperty(0.0);
@@ -47,7 +48,7 @@ public class Customer {
         this.monthlyPurchaseTotal.set(0.0);
     }
 
-    // ===== BASIC GETTERS/SETTERS =====
+    //Getters and setters
     public int getId() { return id.get(); }
     public void setId(int id) { this.id.set(id); }
     public IntegerProperty idProperty() { return id; }
@@ -108,6 +109,7 @@ public class Customer {
     public void setOldestDebtDate(LocalDate date) { this.oldestDebtDate.set(date); }
     public ObjectProperty<LocalDate> oldestDebtDateProperty() { return oldestDebtDate; }
 
+    //Discount Plan getters and setters
     public String getDiscountPlanType() { return discountPlanType.get(); }
     public void setDiscountPlanType(String type) { this.discountPlanType.set(type); }
     public StringProperty discountPlanTypeProperty() { return discountPlanType; }
@@ -129,9 +131,7 @@ public class Customer {
     }
 
     /**
-     * Calculate effective discount rate based on plan type and monthly purchases.
-     * FIXED: Same discount rate for all purchases
-     * FLEXIBLE: Tiered discounts based on monthly purchase value
+     * This method calculates effective discount rate based on plan type and monthly purchases.
      */
     public double calculateEffectiveDiscountRate() {
         if ("NONE".equals(discountPlanType.get())) {

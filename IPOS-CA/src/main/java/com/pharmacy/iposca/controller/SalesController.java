@@ -16,8 +16,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * This class handles all POS sales transactions.
+ * For account holders (with discounts) and walk-in customers
+ */
 public class SalesController {
-    private ObservableList<SalesController.CartItem> cart = FXCollections.observableArrayList();
+    private ObservableList<SalesController.CartItem> cart = FXCollections.observableArrayList(); //holds the items in the cart
     private InventoryController inventoryController;
     private ObservableList<SalesController.SaleRecord> salesLog = FXCollections.observableArrayList();
     private int saleCounter = 50000;
@@ -73,6 +77,9 @@ public class SalesController {
         cart.remove(item);
     }
 
+    /**
+     * Method to process a sale and update inventory
+     * */
     public String processSale(Customer c, String paymentType, String cardType,
                               String cardFirstFour, String cardLastFour, String cardExpiry) {
         if (cart.isEmpty()) {
@@ -80,6 +87,8 @@ public class SalesController {
         }
 
         double totalDue = calculateTotal();
+
+        //Calciulate discount for account holders
         double discountRate = 0.0;
         double discountAmount = 0.0;
         double totalAfterDiscount = totalDue;
@@ -92,6 +101,7 @@ public class SalesController {
 
         double finalAmountPayable = totalAfterDiscount;
 
+        //Account holder verification
         if (c != null) {
             if ("CASH".equalsIgnoreCase(paymentType)) {
                 return "ERROR: Account holders must pay by card. Cash payments are not permitted.";
@@ -129,6 +139,7 @@ public class SalesController {
             }
         }
 
+        //Decrement inventory stock level
         for (SalesController.CartItem item : cart) {
             int availableStock = inventoryController.getProducts().stream()
                     .filter(p -> p.getId() == item.getProduct().getId())
@@ -145,6 +156,9 @@ public class SalesController {
         return "SUCCESS";
     }
 
+    /**
+     * Validate card details for account holders
+     */
     private String validateCardDetails(String cardType, String firstFour, String lastFour, String expiry) {
         if (cardType == null || cardType.trim().isEmpty()) {
             return "Card type is required.";
@@ -213,7 +227,7 @@ public class SalesController {
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {
                 salesLog.add(new SaleRecord(saleCounter, customerName, finalAmount, LocalDate.now(), paymentType));
-                System.out.println("Sale #" + saleCounter + " logged to database");
+                System.out.println("Sale " + saleCounter + " logged to database");
             }
         } catch (SQLException e) {
             System.err.println("Error logging sale: " + e.getMessage());
@@ -221,14 +235,18 @@ public class SalesController {
         }
     }
 
+    /**
+     * Generates formal file for invoices/receipts for POS sales
+     */
     public File generateFormalLetter(Customer c) {
         int invoiceNum = 100000 + new Random().nextInt(900000);
         File file = new File("Invoice_" + invoiceNum + ".html");
         StringBuilder html = new StringBuilder();
         double vatRate = inventoryController.getVatRate();
-        double grossTotal = calculateTotal();
-        double netTotal = grossTotal / (1 + vatRate);
-        double vatAmount = grossTotal - netTotal;
+        double grossTotal = calculateTotal(); //Total before VAT
+        double netTotal = grossTotal / (1 + vatRate); //extracts net from gross
+        double vatAmount = grossTotal - netTotal; //calculates VAT amount
+
         LocalDate now = LocalDate.now();
         String dateStr = now.format(DateTimeFormatter.ofPattern("d MMMM yyyy"));
         String customerLastName = "Customer";
@@ -240,6 +258,8 @@ public class SalesController {
         }
         MerchantSettingsController settingsController = MerchantSettingsController.getInstance();
         com.pharmacy.iposca.model.MerchantSettings settings = settingsController.getMerchantSettings();
+
+        // HTML Header and body for the invoice
         html.append("<!DOCTYPE html>\n<html lang='en'>\n<head>\n<meta charset='UTF-8'>\n");
         html.append("<style>\n");
         html.append("  * { margin: 0; padding: 0; box-sizing: border-box; }\n");
@@ -266,6 +286,7 @@ public class SalesController {
         html.append("  @media print { body { background: white; padding: 0; } .invoice-container { box-shadow: none; padding: 40px; } }\n");
         html.append("</style>\n</head>\n<body>\n<div class='invoice-container'>\n");
 
+        //Header section
         html.append("<div class='header-section'>\n<div class='customer-address'>\n");
         if (c != null) {
             html.append(customerTitle).append(". ").append(c.getName()).append(",<br>\n");
@@ -284,10 +305,11 @@ public class SalesController {
         html.append("Fax: ").append(settings != null && settings.getFax() != null ? settings.getFax() : "0208 778 0125").append("\n");
         html.append("</div>\n</div>\n");
 
-        html.append("<div class='invoice-date'>").append(dateStr).append("</div>\n");
+        html.append("<div class='invoice-date'>").append(dateStr).append("</div>\n"); //Invoice date
         html.append("<div class='salutation'>Dear ").append(customerTitle).append(". ").append(customerLastName).append(",</div>\n");
-        html.append("<div class='invoice-title'>INVOICE NO.: ").append(invoiceNum).append("</div>\n");
+        html.append("<div class='invoice-title'>INVOICE NO.: ").append(invoiceNum).append("</div>\n"); //Invoice title
 
+        //Account Number
         if (c != null) {
             html.append("<div class='account-no'>Account No: CSM").append(String.format("%06d", c.getId())).append("</div>\n");
         }
@@ -303,6 +325,7 @@ public class SalesController {
         html.append("<tr>\n<td class='label'>VAT @ ").append(String.format("%.1f", vatRate * 100)).append("%</td>\n<td class='value'>").append(String.format("%.2f", vatAmount)).append("</td>\n</tr>\n");
         html.append("<tr>\n<td class='label final'>Amount Due</td>\n<td class='value final'>").append(String.format("%.2f", grossTotal)).append("</td>\n</tr>\n</table>\n");
 
+        //Footer text, uses the template from database
         html.append("<div class='footer-text'>\n");
         com.pharmacy.iposca.model.DocumentTemplate invoiceTemplate = settingsController.getTemplateByType("INVOICE");
         if (invoiceTemplate != null && invoiceTemplate.getFooterTemplate() != null) {
@@ -338,6 +361,9 @@ public class SalesController {
         return salesLog;
     }
 
+    /**
+     * class that represents a single product item in the cart, including its quantity and price.
+     */
     public static class CartItem {
         private final Product product;
         private final IntegerProperty quantity = new SimpleIntegerProperty(1);
@@ -346,6 +372,7 @@ public class SalesController {
             this.product = p;
         }
 
+        //Getters and setters
         public String getName() { return product.getName(); }
         public double getPrice() { return product.getPrice(); }
         public int getQuantity() { return quantity.get(); }
@@ -354,6 +381,9 @@ public class SalesController {
         public Product getProduct() { return product; }
     }
 
+    /**
+     * class that represents a sale record in the sales log
+     */
     public static class SaleRecord {
         private final int id;
         private final String customerName;
@@ -369,6 +399,7 @@ public class SalesController {
             this.paymentType = type;
         }
 
+        //Getters
         public int getId() { return id; }
         public String getCustomerName() { return customerName; }
         public double getAmount() { return amount; }

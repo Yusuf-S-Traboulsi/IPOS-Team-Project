@@ -18,8 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- Supplier Controller - Manages IPOS-SA ordering system
- All supplier data is loaded from MySQL database
+ * This class manages IPOS-SA ordering system
  */
 public class SupplierController {
     private static SupplierController instance;
@@ -40,11 +39,10 @@ public class SupplierController {
         return instance;
     }
 
-    // ============================================================
-    // DATABASE LOAD METHODS
-    // ============================================================
+    //Loading from database
     private void loadCatalogue() {
         String sql = "SELECT * FROM supplier_catalogue ORDER BY category, item_id";
+        // Loads and clears catalogue with ordered items
         try (Connection conn = DatabaseConnector.getSAConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -64,9 +62,9 @@ public class SupplierController {
                 );
                 catalogue.add(item);
             }
-            System.out.println("✅ Loaded " + catalogue.size() + " items from supplier catalogue");
+            System.out.println("Loaded " + catalogue.size() + " items from supplier catalogue");
         } catch (SQLException e) {
-            System.err.println("❌ Error loading supplier catalogue: " + e.getMessage());
+            System.err.println("Error loading supplier catalogue: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -78,6 +76,8 @@ public class SupplierController {
              ResultSet rs = stmt.executeQuery(sql)) {
 
             orders.clear();
+
+            //Loads orders from database into orders list
             while (rs.next()) {
                 SupplierOrder order = new SupplierOrder(
                         rs.getString("order_id"),
@@ -94,16 +94,16 @@ public class SupplierController {
                         rs.getDate("paid_date").toLocalDate() : null);
                 orders.add(order);
             }
-            System.out.println("✅ Loaded " + orders.size() + " supplier orders");
+            System.out.println("Loaded " + orders.size() + " supplier orders");
         } catch (SQLException e) {
-            System.err.println("❌ Error loading supplier orders: " + e.getMessage());
+            System.err.println("Error loading supplier orders: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    // ============================================================
-    // ORDER MANAGEMENT METHODS
-    // ============================================================
+    /**
+     * Places a transactional order with items and invoice
+     */
     public String placeOrder(List<OrderItem> items) {
         if (items.isEmpty()) {
             return "ERROR: Cart is empty";
@@ -119,6 +119,7 @@ public class SupplierController {
         try (Connection conn = DatabaseConnector.getSAConnection()) {
             conn.setAutoCommit(false);
 
+            //Insert order into supplier_orders table
             try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
                 orderStmt.setString(1, orderId);
                 orderStmt.setDate(2, Date.valueOf(orderDate));
@@ -126,6 +127,7 @@ public class SupplierController {
                 orderStmt.executeUpdate();
             }
 
+            //Insert all items that belong to the order
             try (PreparedStatement itemStmt = conn.prepareStatement(itemSql)) {
                 for (OrderItem item : items) {
                     itemStmt.setString(1, orderId);
@@ -153,11 +155,11 @@ public class SupplierController {
 
             conn.commit();
             loadOrders();
-            System.out.println("✅ Order placed: " + orderId + " - Total: £" + totalAmount);
+            System.out.println("Order placed: " + orderId + " - Total: £" + totalAmount);
             return orderId;
 
         } catch (SQLException e) {
-            System.err.println("❌ Error placing order: " + e.getMessage());
+            System.err.println("Error placing order: " + e.getMessage());
             e.printStackTrace();
             return "ERROR: " + e.getMessage();
         }
@@ -165,12 +167,13 @@ public class SupplierController {
 
     private String generateOrderId() {
         String sql = "SELECT MAX(CAST(SUBSTRING(order_id, 3) AS UNSIGNED)) as max_id FROM supplier_orders";
+        //Finds the largest order ID in the database and increments it by 1
         try (Connection conn = DatabaseConnector.getSAConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) {
                 int maxId = rs.getInt("max_id");
-                return "IP" + String.format("%04d", maxId + 1);
+                return "IP" + String.format("%04d", maxId + 1); //Ensure the ID is 4 digits long and increments it
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -180,6 +183,8 @@ public class SupplierController {
 
     public double getOutstandingBalance() {
         String sql = "SELECT SUM(outstanding_balance) as total FROM supplier_invoices WHERE status = 'Unpaid'";
+
+        // Calculates total outstanding balance for unpaid supplier invoices
         try (Connection conn = DatabaseConnector.getSAConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -192,6 +197,9 @@ public class SupplierController {
         return 0.0;
     }
 
+    /**
+     * Gets and updates the order items list from database
+     */
     public List<OrderItem> getOrderItems(String orderId) {
         List<OrderItem> items = new ArrayList<>();
         String sql = "SELECT * FROM supplier_order_items WHERE order_id = ?";
@@ -218,10 +226,12 @@ public class SupplierController {
     public ObservableList<Invoice> getInvoices() {
         ObservableList<Invoice> invoices = FXCollections.observableArrayList();
         String sql = "SELECT * FROM supplier_invoices ORDER BY invoice_date DESC";
+
+        // Queries all supplier invoices in the database
         try (Connection conn = DatabaseConnector.getSAConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
+            while (rs.next()) { //loops through each row in the result set
                 invoices.add(new Invoice(
                         rs.getString("invoice_id"),
                         rs.getString("order_id"),
@@ -239,12 +249,13 @@ public class SupplierController {
         return invoices;
     }
 
-    // ============================================================
-    // DELIVERY & PAYMENT METHODS
-    // ============================================================
+   
+    //Delivery & Payment Methods
     public boolean markOrderAsDelivered(String orderId) {
-        System.out.println("📦 Marking order " + orderId + " as delivered...");
+        System.out.println("Marking order " + orderId + " as delivered");
         String sql = "UPDATE supplier_orders SET status = 'Delivered', delivered_date = ? WHERE order_id = ?";
+
+        //Updates order status to delivered
         try (Connection conn = DatabaseConnector.getSAConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -257,6 +268,7 @@ public class SupplierController {
                 System.out.println("Order status updated to Delivered");
                 boolean inventoryUpdated = updateInventoryFromOrder(orderId);
 
+                //syncing inventory with the database
                 if (inventoryUpdated) {
                     System.out.println("Order " + orderId + " marked as delivered - Inventory updated");
                     loadOrders();
@@ -277,7 +289,7 @@ public class SupplierController {
     }
 
     public boolean markOrderAsPaid(String orderId) {
-        System.out.println("💰 Marking order " + orderId + " as paid...");
+        System.out.println("Marking order " + orderId + " as paid");
         String updateOrderSql = "UPDATE supplier_orders SET payment_status = 'Paid', paid_date = ? WHERE order_id = ?";
         String updateInvoiceSql = "UPDATE supplier_invoices SET status = 'Paid', paid_amount = outstanding_balance, outstanding_balance = 0 WHERE order_id = ?";
 
@@ -328,29 +340,40 @@ public class SupplierController {
              PreparedStatement updateStmt = connCA.prepareStatement(updateProductSql)) {
 
             getItemStmt.setString(1, orderId);
+
+            //processes the order items and updates the inventory accordingly
             try (ResultSet rs = getItemStmt.executeQuery()) {
                 int itemsUpdated = 0;
 
                 while (rs.next()) {
-                    String supplierDescription = rs.getString("description");
-                    int quantityDelivered = rs.getInt("quantity");
+                    String supplierDescription = rs.getString("description"); //checks supplier description for product
+                    int quantityDelivered = rs.getInt("quantity"); //checks quantity delivered for product
 
                     System.out.println("  Processing: " + supplierDescription + " x " + quantityDelivered);
 
-                    String productName = mapSupplierItemToProductName(supplierDescription);
+                    //Maps the supplier description to the product name and updates the stock in database
+                    String productName = mapSupplierItemToProductName(supplierDescription); //this binds the product name to the prepared statement
 
+                    //Updating the stock when a matching product is found
                     if (productName != null && !productName.isEmpty()) {
-                        updateStmt.setInt(1, quantityDelivered);
-                        updateStmt.setString(2, productName);
+                        updateStmt.setInt(1, quantityDelivered); //this binds the quantity delivered to the prepared statement
+                        updateStmt.setString(2, productName); //this binds the product name to the prepared statement
+
+                        //Executes the stock update
                         int rowsAffected = updateStmt.executeUpdate();
 
+                        //Refreshing the local memory when the stock is updated
                         if (rowsAffected > 0) {
                             itemsUpdated++;
                             System.out.println("Added " + quantityDelivered + " units to product: " + productName);
                             updateLocalInventoryCache(productName, quantityDelivered);
+
+                        //Product was not found in the database
                         } else {
                             System.out.println("Product '" + productName + "' not found in products table");
                         }
+
+                    //Supplier description doesn't match any product name in the database
                     } else {
                         System.out.println("Could not map supplier item '" + supplierDescription + "' to product");
                     }
@@ -366,6 +389,7 @@ public class SupplierController {
                 }
             }
 
+        //Logging any errors that occur during the stock update process
         } catch (SQLException e) {
             System.err.println("Error updating inventory from order: " + e.getMessage());
             e.printStackTrace();
@@ -373,6 +397,9 @@ public class SupplierController {
         }
     }
 
+    /**
+     * Maps supplier descriptions to standardized product names
+     */
     private String mapSupplierItemToProductName(String supplierDescription) {
         if (supplierDescription == null || supplierDescription.trim().isEmpty()) {
             return null;
@@ -400,7 +427,7 @@ public class SupplierController {
             for (Product p : inventory.getProducts()) {
                 if (p.getName().equalsIgnoreCase(productName)) {
                     p.setStock(p.getStock() + quantity);
-                    System.out.println("  ✓ Local cache updated: " + p.getName() + " stock = " + p.getStock());
+                    System.out.println("Local cache updated: " + p.getName() + " stock = " + p.getStock());
                     break;
                 }
             }
@@ -409,9 +436,7 @@ public class SupplierController {
         }
     }
 
-    // ============================================================
-    // REPORT GENERATION METHODS
-    // ============================================================
+  //Report Generation Methods
     public File generateOrderForm(String orderId) {
         File file = new File("OrderForm_" + orderId + "_" +
                 LocalDate.now().format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
@@ -421,11 +446,11 @@ public class SupplierController {
 
         if (order == null) return file;
 
-        // HTML Header with UTF-8 - FIXED ENCODING
+        //HTML Header
         html.append("<!DOCTYPE html>\n");
         html.append("<html lang='en'>\n");
         html.append("<head>\n");
-        html.append("  <meta charset='UTF-8'>\n");  // ✅ FIXED: Added UTF-8 charset
+        html.append("  <meta charset='UTF-8'>\n");
         html.append("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
         html.append("  <title>Order Form - ").append(orderId).append("</title>\n");
         html.append("  <style>\n");
@@ -445,8 +470,8 @@ public class SupplierController {
         html.append("</head>\n");
         html.append("<body>\n");
 
-        // Header
-        html.append("<h1>Order Form</h1>\n");  // ✅ REMOVED: Appendix reference
+        //Header
+        html.append("<h1>Order Form</h1>\n");
         html.append("<div class='header-info'>\n");
         html.append("  <p><strong>Client:</strong> Cosymed Ltd.</p>\n");
         html.append("  <p>3, High Level Drive<br>Sydenham, SE26 3ET</p>\n");
@@ -456,15 +481,15 @@ public class SupplierController {
         html.append("  <p><strong>Order Date:</strong> ").append(order.getOrderDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n");
         html.append("</div>\n");
 
-        // Items Table
+        //Items Table
         html.append("<table>\n");
         html.append("  <thead>\n");
         html.append("    <tr>\n");
         html.append("      <th>Item ID</th>\n");
         html.append("      <th>Description</th>\n");
         html.append("      <th>Quantity</th>\n");
-        html.append("      <th>Unit Cost, £</th>\n");  // ✅ FIXED: Proper £ symbol
-        html.append("      <th>Total, £</th>\n");  // ✅ FIXED: Proper £ symbol
+        html.append("      <th>Unit Cost, £</th>\n"); 
+        html.append("      <th>Total, £</th>\n"); 
         html.append("    </tr>\n");
         html.append("  </thead>\n");
         html.append("  <tbody>\n");
@@ -492,7 +517,7 @@ public class SupplierController {
         html.append("  </tfoot>\n");
         html.append("</table>\n");
 
-        // Signature
+        //Signature
         html.append("<div class='signature'>\n");
         html.append("  <p>For Cosymed Ltd:</p>\n");
         html.append("  <br><br><br>\n");
@@ -500,7 +525,7 @@ public class SupplierController {
         html.append("  <p>Authorised Signature</p>\n");
         html.append("</div>\n");
 
-        // Footer
+        //Footer
         html.append("<div class='footer'>\n");
         html.append("  <p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n");
         html.append("  <p><strong>By:</strong> Director of Operations</p>\n");
@@ -519,7 +544,7 @@ public class SupplierController {
                 endDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
         StringBuilder html = new StringBuilder();
 
-        // Get ALL orders if no date range specified, otherwise filter
+        //Gets all orders if no date range specified, otherwise filter
         List<SupplierOrder> filteredOrders;
         if (startDate == null || endDate == null) {
             filteredOrders = new ArrayList<>(getOrders());
@@ -529,11 +554,11 @@ public class SupplierController {
                     .collect(java.util.stream.Collectors.toList());
         }
 
-        // HTML Header with UTF-8 - FIXED ENCODING
+        //HTML Header
         html.append("<!DOCTYPE html>\n");
         html.append("<html lang='en'>\n");
         html.append("<head>\n");
-        html.append("  <meta charset='UTF-8'>\n");  // ✅ FIXED: Added UTF-8 charset
+        html.append("  <meta charset='UTF-8'>\n"); 
         html.append("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
         html.append("  <title>Orders Summary Report</title>\n");
         html.append("  <style>\n");
@@ -553,7 +578,7 @@ public class SupplierController {
         html.append("<body>\n");
 
         // Header
-        html.append("<h1>Merchant's Orders Summary</h1>\n");  // ✅ REMOVED: Appendix reference
+        html.append("<h1>Merchant's Orders Summary</h1>\n");
         html.append("<div class='header-info'>\n");
         html.append("  <p><strong>Report Period:</strong> ");
         if (startDate != null && endDate != null) {
@@ -570,13 +595,13 @@ public class SupplierController {
         html.append("  <p><strong>IPOS Account:</strong> 0000235</p>\n");
         html.append("</div>\n");
 
-        // Orders Table
+        //Orders Table
         html.append("<table>\n");
         html.append("  <thead>\n");
         html.append("    <tr>\n");
         html.append("      <th>Order ID</th>\n");
         html.append("      <th>Ordered</th>\n");
-        html.append("      <th>Amount, £</th>\n");  // ✅ FIXED: Proper £ symbol
+        html.append("      <th>Amount, £</th>\n");
         html.append("      <th>Dispatched</th>\n");
         html.append("      <th>Delivered</th>\n");
         html.append("      <th>Paid</th>\n");
@@ -622,7 +647,7 @@ public class SupplierController {
         html.append("  </tfoot>\n");
         html.append("</table>\n");
 
-        // Footer
+        //Footer
         html.append("<div class='footer'>\n");
         html.append("  <p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n");
         html.append("  <p><strong>By:</strong> Director of Operations</p>\n");
@@ -641,7 +666,7 @@ public class SupplierController {
                 endDate.format(DateTimeFormatter.ofPattern("ddMMyyyy")) + ".html");
         StringBuilder html = new StringBuilder();
 
-        // Get ALL orders if no date range specified
+        //Gets all orders if no date range specified
         List<SupplierOrder> filteredOrders;
         if (startDate == null || endDate == null) {
             filteredOrders = new ArrayList<>(getOrders());
@@ -651,11 +676,11 @@ public class SupplierController {
                     .collect(java.util.stream.Collectors.toList());
         }
 
-        // HTML Header with UTF-8 - FIXED ENCODING
+        //HTML Header
         html.append("<!DOCTYPE html>\n");
         html.append("<html lang='en'>\n");
         html.append("<head>\n");
-        html.append("  <meta charset='UTF-8'>\n");  // ✅ FIXED: Added UTF-8 charset
+        html.append("  <meta charset='UTF-8'>\n");
         html.append("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n");
         html.append("  <title>Detailed Order Report</title>\n");
         html.append("  <style>\n");
@@ -674,8 +699,8 @@ public class SupplierController {
         html.append("</head>\n");
         html.append("<body>\n");
 
-        // Header
-        html.append("<h1>Merchant's Orders Detailed Report</h1>\n");  // ✅ REMOVED: Appendix reference
+        //Header
+        html.append("<h1>Merchant's Orders Detailed Report</h1>\n");
         html.append("<div class='header-info'>\n");
         html.append("  <p><strong>Report Period:</strong> ");
         if (startDate != null && endDate != null) {
@@ -692,18 +717,18 @@ public class SupplierController {
         html.append("  <p><strong>IPOS Account:</strong> 0000235</p>\n");
         html.append("</div>\n");
 
-        // Detailed Table
+        //Table
         html.append("<table>\n");
         html.append("  <thead>\n");
         html.append("    <tr>\n");
         html.append("      <th>Order ID</th>\n");
-        html.append("      <th>Order Total, £</th>\n");  // ✅ FIXED: Proper £ symbol
+        html.append("      <th>Order Total, £</th>\n");
         html.append("      <th>Ordered</th>\n");
         html.append("      <th>Item ID</th>\n");
         html.append("      <th>Description</th>\n");
         html.append("      <th>Quantity</th>\n");
-        html.append("      <th>Unit Cost, £</th>\n");  // ✅ FIXED: Proper £ symbol
-        html.append("      <th>Line Total, £</th>\n");  // ✅ FIXED: Proper £ symbol
+        html.append("      <th>Unit Cost, £</th>\n");
+        html.append("      <th>Line Total, £</th>\n");
         html.append("    </tr>\n");
         html.append("  </thead>\n");
         html.append("  <tbody>\n");
@@ -753,7 +778,7 @@ public class SupplierController {
         html.append("  </tfoot>\n");
         html.append("</table>\n");
 
-        // Footer
+        //Footer
         html.append("<div class='footer'>\n");
         html.append("  <p><strong>Generated:</strong> ").append(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))).append("</p>\n");
         html.append("  <p><strong>By:</strong> Director of Operations</p>\n");
@@ -782,13 +807,13 @@ public class SupplierController {
                 java.awt.Desktop.getDesktop().browse(file.toURI());
             }
         } catch (Exception e) {
-            System.err.println("❌ Error writing report: " + e.getMessage());
+            System.err.println("Error writing report: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * Escape HTML special characters to prevent encoding issues
+     * Method to escape HTML special characters to prevent encoding issues
      */
     private String escapeHtml(String text) {
         if (text == null) return " ";
@@ -807,12 +832,12 @@ public class SupplierController {
             stmt.setString(2, password);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    System.out.println("✅ IPOS-SA authentication successful: " + username);
+                    System.out.println("IPOS-SA authentication successful: " + username);
                     return true;
                 }
             }
         } catch (SQLException e) {
-            System.err.println("❌ IPOS-SA authentication error: " + e.getMessage());
+            System.err.println("IPOS-SA authentication error: " + e.getMessage());
             if (("supplier".equals(username) && "supplier123".equals(password)) ||
                     ("cosymed".equals(username) && "bondstreet".equals(password))) {
                 return true;
@@ -833,6 +858,9 @@ public class SupplierController {
         loadOrders();
     }
 
+    /**
+     * Class that represents a supplier order item
+     */
     public static class OrderItem {
         public String itemId;
         public String description;
@@ -849,6 +877,9 @@ public class SupplierController {
         }
     }
 
+    /**
+     * Class that represents an IPOS-SA supplier invoice
+     */
     public static class Invoice {
         private final StringProperty invoiceId = new SimpleStringProperty();
         private final StringProperty orderId = new SimpleStringProperty();
@@ -872,6 +903,7 @@ public class SupplierController {
             this.status.set(status);
         }
 
+        //Getters for the invoice order
         public String getInvoiceId() { return invoiceId.get(); }
         public String getOrderId() { return orderId.get(); }
         public LocalDate getInvoiceDate() { return invoiceDate.get(); }

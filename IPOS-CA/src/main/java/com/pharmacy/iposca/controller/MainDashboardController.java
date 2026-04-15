@@ -16,8 +16,8 @@ import java.io.IOException;
 import java.net.URL;
 
 /**
- * Main Dashboard Controller - Handles navigation and role-based permissions
- */
+ * This class handles navigation and role-based permissions
+ * */
 public class MainDashboardController {
 
     @FXML private VBox sidebar;
@@ -66,19 +66,19 @@ public class MainDashboardController {
 
         // Role-specific button visibility
         if (user.isAdmin()) {
-            // Admin: ONLY Admin module
+            // For Admin permissions
             navButtons.getChildren().add(createSectionLabel("SYSTEM"));
             if (adminBtn != null) navButtons.getChildren().add(adminBtn);
             if (titleLabel != null) titleLabel.setText("Admin Panel");
 
         } else if (user.isManager()) {
-            // Manager: Everything EXCEPT Admin
+            // For Manager permissions
             navButtons.getChildren().add(createSectionLabel("OPERATIONS"));
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
             if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);
 
-            // ADD ONLINE ORDERS FOR MANAGER
+            //Online Orders added for Manager
             if (onlineOrderBtn != null) {
                 navButtons.getChildren().add(createSectionLabel("ONLINE SALES"));
                 navButtons.getChildren().add(onlineOrderBtn);
@@ -95,13 +95,13 @@ public class MainDashboardController {
             if (titleLabel != null) titleLabel.setText("Manager Dashboard");
 
         } else if (user.isPharmacist()) {
-            // Pharmacist: Everything EXCEPT Admin AND Reports AND Templates
+            // For Pharmacist permissions
             navButtons.getChildren().add(createSectionLabel("OPERATIONS"));
             if (posBtn != null) navButtons.getChildren().add(posBtn);
             if (inventoryBtn != null) navButtons.getChildren().add(inventoryBtn);
             if (supplierBtn != null) navButtons.getChildren().add(supplierBtn);
 
-            // ADD ONLINE ORDERS FOR PHARMACIST
+            //Online orders added for Pharmacist
             if (onlineOrderBtn != null) {
                 navButtons.getChildren().add(createSectionLabel("ONLINE SALES"));
                 navButtons.getChildren().add(onlineOrderBtn);
@@ -137,8 +137,7 @@ public class MainDashboardController {
         }
     }
 
-    // --- Navigation Handlers ---
-
+    //Navigation Handlers
     @FXML
     private void showPOS() {
         loadView("/com/pharmacy/iposca/POSView.fxml", "POS / Sales");
@@ -161,6 +160,7 @@ public class MainDashboardController {
 
     @FXML
     private void showReports() {
+        //Check if the user has manager permissions
         if (currentUser != null && currentUser.isManager()) {
             loadView("/com/pharmacy/iposca/ReportingView.fxml", "Reports");
         } else {
@@ -170,6 +170,7 @@ public class MainDashboardController {
 
     @FXML
     private void showDiscountSettings() {
+        //Checks if the user has manager or pharmacist permissions
         if (currentUser != null && (currentUser.isManager() || currentUser.isPharmacist())) {
             loadView("/com/pharmacy/iposca/discount_settings.fxml", "Discount Settings");
         } else {
@@ -179,6 +180,7 @@ public class MainDashboardController {
 
     @FXML
     private void showTemplates() {
+        //Checks if the user has manager permissions
         if (currentUser != null && currentUser.isManager()) {
             try {
                 MerchantSettingsView templatesView = new MerchantSettingsView();
@@ -195,6 +197,7 @@ public class MainDashboardController {
 
     @FXML
     private void showSuppliers() {
+        //Shows the supplier login screen first
         if (currentUser != null && (currentUser.isManager() || currentUser.isPharmacist())) {
             try {
                 SupplierLoginView loginView = new SupplierLoginView();
@@ -209,7 +212,9 @@ public class MainDashboardController {
         }
     }
 
-
+    /**
+     * Loads online portal view for authorized roles
+     */
     @FXML
     private void showOnlineOrders() {
         if (currentUser != null && currentUser.isManager()) {
@@ -221,6 +226,7 @@ public class MainDashboardController {
 
     @FXML
     private void handleLogout() {
+        //Switches to login screen after logout
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/pharmacy/iposca/LoginView.fxml"));
             Parent root = loader.load();

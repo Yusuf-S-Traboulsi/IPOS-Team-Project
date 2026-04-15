@@ -3,6 +3,9 @@ package com.pharmacy.iposca.model;
 import javafx.beans.property.*;
 import java.time.LocalDate;
 
+/**
+ * Class representing a supplier order.
+ */
 public class SupplierOrder {
     private final StringProperty orderId = new SimpleStringProperty();
     private final ObjectProperty<LocalDate> orderDate = new SimpleObjectProperty<>();
@@ -20,6 +23,7 @@ public class SupplierOrder {
         this.status.set(status);
     }
 
+    //Getters and setters
     public String getOrderId() { return orderId.get(); }
     public LocalDate getOrderDate() { return orderDate.get(); }
     public double getTotalAmount() { return totalAmount.get(); }

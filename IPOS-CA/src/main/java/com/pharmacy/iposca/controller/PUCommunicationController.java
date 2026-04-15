@@ -9,10 +9,8 @@ import java.sql.*;
 import java.time.LocalDate;
 
 /**
- * Handles communication between IPOS-CA and IPOS-PU databases.
- * Fulfills requirement: Receive online sales & Maintain status.
- *
- * UPDATED TO MATCH: ipos_pu.online_sales schema
+ * This class handles communication between IPOS-CA and IPOS-PU databases.
+ * Used for receiving online sales and updating their status.
  */
 public class PUCommunicationController {
 
@@ -27,13 +25,10 @@ public class PUCommunicationController {
 
     /**
      * Fetches all orders from the IPOS-PU database.
-     * Table: online_sales
-     * Columns: id, sale_reference, customer_type, customer_id, sale_date, total_amount, order_status, delivery_address, delivery_town, delivery_postcode, payment_method
      */
     public ObservableList<OnlineOrder> getPortalOrders() {
         ObservableList<OnlineOrder> orders = FXCollections.observableArrayList();
 
-        // CORRECTED SQL: Matches 'online_sales' table schema exactly
         String sql = "SELECT id, sale_reference, customer_type, customer_id, sale_date, " +
                 "subtotal, discount_amount, delivery_charge, total_amount, " +
                 "payment_method, payment_status, delivery_address, delivery_town, " +
@@ -57,7 +52,7 @@ public class PUCommunicationController {
                     fullAddress += ", " + postcode;
                 }
 
-                // Map customer_type (ENUM) to a readable name for the UI
+                // Maps customer_type to a readable name for the UI
                 String customerDisplay = rs.getString("customer_type");
                 if ("NON_COMMERCIAL".equals(customerDisplay)) {
                     customerDisplay = "Non-Commercial (ID: " + rs.getInt("customer_id") + ")";
@@ -65,23 +60,23 @@ public class PUCommunicationController {
                     customerDisplay = "Commercial (ID: " + rs.getInt("customer_id") + ")";
                 }
 
-                // PASSING 9 ARGUMENTS TO MATCH THE UPDATED OnlineOrder CONSTRUCTOR
+                //Passing the order details
                 orders.add(new OnlineOrder(
-                        rs.getInt("id"),                        // 1. Order ID
-                        rs.getString("sale_reference"),         // 2. Email/Ref (using sale_reference)
-                        customerDisplay,                        // 3. Name (using mapped customer_type)
-                        fullAddress,                            // 4. Address (combined)
-                        rs.getString("delivery_postcode"),      // 5. Postcode
-                        rs.getDouble("total_amount"),           // 6. Amount
-                        rs.getString("order_status"),           // 7. Status
-                        rs.getTimestamp("sale_date").toLocalDateTime().toLocalDate(), // 8. Date (handle DATETIME)
-                        rs.getString("payment_method")          // 9. Payment Method
+                        rs.getInt("id"), // Order ID
+                        rs.getString("sale_reference"),//Email/sale_ref
+                        customerDisplay, //Name (using mapped customer_type)
+                        fullAddress, //delivery address
+                        rs.getString("delivery_postcode"), //Postcode
+                        rs.getDouble("total_amount"), //Amount
+                        rs.getString("order_status"), //Status
+                        rs.getTimestamp("sale_date").toLocalDateTime().toLocalDate(), //Date
+                        rs.getString("payment_method") //Payment Method
                 ));
             }
-            System.out.println("✅ Loaded " + orders.size() + " orders from IPOS-PU");
+            System.out.println("Loaded " + orders.size() + " orders from IPOS-PU");
 
         } catch (SQLException e) {
-            System.err.println("❌ Error fetching PU orders: " + e.getMessage());
+            System.err.println("Error fetching PU orders: " + e.getMessage());
             e.printStackTrace();
         }
         return orders;
@@ -92,7 +87,7 @@ public class PUCommunicationController {
      * Used when CA dispatches/delivers an order.
      */
     public boolean updateOrderStatus(int orderId, String newStatus) {
-        // CORRECTED SQL: Matches 'online_sales' table
+
         String sql = "UPDATE online_sales SET order_status = ? WHERE id = ?";
 
         try (Connection conn = DatabaseConnector.getPUConnection();
@@ -103,11 +98,11 @@ public class PUCommunicationController {
 
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                System.out.println("✅ Order #" + orderId + " updated to: " + newStatus);
+                System.out.println("Order: " + orderId + " updated to: " + newStatus);
                 return true;
             }
         } catch (SQLException e) {
-            System.err.println("❌ Error updating order: " + e.getMessage());
+            System.err.println("Error updating order: " + e.getMessage());
         }
         return false;
     }
@@ -117,10 +112,10 @@ public class PUCommunicationController {
      */
     public boolean markAsDelivered(int orderId) {
         String tracking = "TRK-" + System.currentTimeMillis();
-
-        // First update status to DELIVERED
+      
+        // First updates status to Delivered
         if (updateOrderStatus(orderId, "Delivered")) {
-            // Then update tracking link (column exists in your schema)
+            // Then update tracking
             String sqlTrack = "UPDATE online_sales SET tracking_link = ? WHERE id = ?";
             try (Connection conn = DatabaseConnector.getPUConnection();
                  PreparedStatement stmt = conn.prepareStatement(sqlTrack)) {

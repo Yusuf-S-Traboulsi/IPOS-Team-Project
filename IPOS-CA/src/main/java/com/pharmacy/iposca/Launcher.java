@@ -15,8 +15,7 @@ import spark.Spark;
 import java.io.IOException;
 
 /**
- * JavaFX Application Launcher for IPOS-CA Pharmacy Management System
- * Starts REST APIs in background and loads JavaFX UI
+ * This class acts as the JavaFX Application Launcher for IPOS-CA System
  */
 public class Launcher extends Application {
 
@@ -25,19 +24,18 @@ public class Launcher extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        // ✅ Load .env file and export as system properties
+        //Loading .env file and exporting as system properties
         Dotenv dotenv = Dotenv.configure()
-                .filename("IPOS.env")           // Your custom filename
-                .directory(".")                  // Look in project root
-                .systemProperties()              // Export to System.getProperty()
-                .ignoreIfMissing()               // Don't crash if file missing
+                .filename("IPOS.env")
+                .directory(".")
+                .systemProperties()
+                .ignoreIfMissing()
                 .load();
 
-        // Debug: Print loaded values (remove in production)
         System.out.println("DEBUG: IPOS_SA_API_KEY loaded = [" +
                 System.getProperty("IPOS_SA_API_KEY", "NOT SET") + "]");
 
-        // Start APIs BEFORE loading UI (on background threads)
+        //Start APIs before loading the UI
         Thread apiThread = new Thread(() -> {
             InventoryRestAPI.start(4567);
             SupplierRestAPI.start(4568);
@@ -45,17 +43,17 @@ public class Launcher extends Application {
         apiThread.setDaemon(true);
         apiThread.start();
 
-        // Show loading screen while APIs initialize
+        //Show loading screen while APIs initialize
         Stage loadingStage = new Stage();
         javafx.scene.control.Label loadingLabel = new javafx.scene.control.Label("Starting IPOS-CA...");
         loadingLabel.setStyle("-fx-font-size: 16px; -fx-padding: 20px;");
         loadingStage.setScene(new Scene(new javafx.scene.layout.VBox(loadingLabel), 300, 100));
         loadingStage.show();
 
-        // Wait for APIs then load main UI
+        //Waiting for APIs then load the main UI
         new Thread(() -> {
             try {
-                Thread.sleep(2000); // Wait for APIs
+                Thread.sleep(2000); //Waits for APIs
                 Platform.runLater(() -> {
                     loadingStage.close();
 

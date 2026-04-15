@@ -5,6 +5,9 @@ import com.pharmacy.iposca.model.Customer;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
+/**
+ * This UI class handles the Discount Settings module
+ */
 public class DiscountSettingsView {
 
     @FXML private ComboBox<Customer> customerCombo;
@@ -53,7 +56,8 @@ public class DiscountSettingsView {
         planTypeCombo.getItems().addAll("NONE", "FIXED", "FLEXIBLE");
         planTypeCombo.setValue("NONE");
 
-        customerCombo.setOnAction(e -> updateCustomerInfo());
+        customerCombo.setOnAction(e -> updateCustomerInfo()); //Update info when customer changes
+
 
         planTypeCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
             boolean disableRate = newVal == null || newVal.equalsIgnoreCase("NONE");
@@ -69,6 +73,8 @@ public class DiscountSettingsView {
 
     private void updateCustomerInfo() {
         Customer selected = customerCombo.getValue();
+
+        //Updating the UI for selected customer discount details
         if (selected != null) {
             String info = String.format(
                     "Current Plan: %s | Discount Rate: %.1f%% | Monthly Purchases: £%.2f | Effective Discount: %.1f%%",

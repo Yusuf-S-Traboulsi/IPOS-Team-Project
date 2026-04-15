@@ -17,9 +17,8 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Merchant Settings View - Manage templates and company identity
- * Access: Manager role only
- * Includes logo upload functionality
+ * This UI class represents the Merchant Settings view.
+ * Accessible only by Manager role
  */
 public class MerchantSettingsView extends TabPane {
 
@@ -65,7 +64,7 @@ public class MerchantSettingsView extends TabPane {
     }
 
     /**
-     * Create Merchant Settings Panel with Logo Upload
+     * Method to create Merchant Settings Panel with Logo Upload
      */
     private VBox createMerchantSettingsPanel() {
         VBox panel = new VBox(15);
@@ -74,27 +73,27 @@ public class MerchantSettingsView extends TabPane {
 
         MerchantSettings settings = controller.getMerchantSettings();
 
-        // Title
+        //Title
         Label titleLabel = new Label("Merchant/Pharmacy Identity Settings");
         titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
         Separator separator1 = new Separator();
 
-        // Logo Section
+        //Logo Section
         Label logoLabel = new Label("Company Logo:");
         logoLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
 
         HBox logoBox = new HBox(15);
         logoBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
-        // Logo preview
+        //Logo preview
         logoImageView = new ImageView();
         logoImageView.setFitWidth(150);
         logoImageView.setFitHeight(100);
         logoImageView.setPreserveRatio(true);
         logoImageView.setStyle("-fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-color: white;");
 
-        // Load existing logo if exists
+        //Load existing logo if exists
         String logoPath = settings.getLogoPath();
         if (logoPath != null && !logoPath.isEmpty()) {
             File logoFile = new File(logoPath);
@@ -126,7 +125,7 @@ public class MerchantSettingsView extends TabPane {
 
         Separator separator2 = new Separator();
 
-        // Company Information Section
+        //Company Information Section
         Label companyLabel = new Label("Company Information");
         companyLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
 
@@ -151,7 +150,7 @@ public class MerchantSettingsView extends TabPane {
         companyGrid.add(createLabel("Postcode:"), 0, 4);
         companyGrid.add(postcodeField, 1, 4);
 
-        // Contact Information Section
+        //Contact Information Section
         Label contactLabel = new Label("Contact Information");
         contactLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
 
@@ -176,7 +175,7 @@ public class MerchantSettingsView extends TabPane {
         contactGrid.add(createLabel("Director Name:"), 0, 4);
         contactGrid.add(directorNameField, 1, 4);
 
-        // Registration Information
+        //Registration Information
         Label regLabel = new Label("Registration Information");
         regLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
 
@@ -192,16 +191,16 @@ public class MerchantSettingsView extends TabPane {
         regGrid.add(createLabel("VAT Number:"), 0, 1);
         regGrid.add(vatNumberField, 1, 1);
 
-        // Save Button
+        //Save Button
         Button saveButton = new Button("Save Merchant Settings");
         saveButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30;");
         saveButton.setOnAction(e -> handleSaveMerchantSettings());
 
-        // Info Label
+        //Info Label
         infoLabel = new Label();
         infoLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
 
-        // Help Text
+        //Help Text
         Label helpText = new Label("These settings will be used in all invoices, reminders, and statements.");
         helpText.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
 
@@ -225,7 +224,7 @@ public class MerchantSettingsView extends TabPane {
     }
 
     /**
-     * Handle logo upload
+     * Handles logo upload
      */
     private void handleUploadLogo() {
         FileChooser fileChooser = new FileChooser();
@@ -239,7 +238,7 @@ public class MerchantSettingsView extends TabPane {
 
         if (selectedFile != null) {
             try {
-                // Copy logo to application directory
+                //This copies logo to the application directory
                 String appDir = System.getProperty("user.dir") + "/logos/";
                 File appLogoDir = new File(appDir);
                 if (!appLogoDir.exists()) {
@@ -252,7 +251,7 @@ public class MerchantSettingsView extends TabPane {
 
                 Files.copy(selectedFile.toPath(), newLogoFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-                // Update UI and settings
+                //Updates UI and settings
                 logoPathField.setText(newLogoPath);
                 logoImageView.setImage(new Image(newLogoFile.toURI().toString()));
 
@@ -290,13 +289,13 @@ public class MerchantSettingsView extends TabPane {
             template = new DocumentTemplate("Default " + templateType, templateType, "", "", "");
         }
 
-        // Title
+        //Title
         Label titleLabel = new Label("Template: " + template.getTemplateName());
         titleLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
 
         Separator separator1 = new Separator();
 
-        // Available Placeholders
+        //Available Placeholders
         Label placeholdersLabel = new Label("Available Placeholders:");
         placeholdersLabel.setStyle("-fx-font-weight: bold;");
 
@@ -309,22 +308,22 @@ public class MerchantSettingsView extends TabPane {
         placeholdersText.setStyle("-fx-text-fill: #2980b9; -fx-font-size: 12px;");
         placeholdersText.setWrapText(true);
 
-        // Subject
+        //Subject
         Label subjectLabel = new Label("Subject:");
         subjectLabel.setStyle("-fx-font-weight: bold;");
         subjectArea = createTextArea(template.getSubjectTemplate(), 400, 2);
 
-        // Body
+        //Body
         Label bodyLabel = new Label("Body:");
         bodyLabel.setStyle("-fx-font-weight: bold;");
         bodyArea = createTextArea(template.getBodyTemplate(), 500, 12);
 
-        // Footer
+        //Footer
         Label footerLabel = new Label("Footer/Sign-off:");
         footerLabel.setStyle("-fx-font-weight: bold;");
         footerArea = createTextArea(template.getFooterTemplate(), 400, 5);
 
-        // Save Button
+        //Save Button
         Button saveButton = new Button("Save Template");
         saveButton.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 30;");
         saveButton.setOnAction(e -> handleSaveTemplate(templateType));
@@ -336,7 +335,7 @@ public class MerchantSettingsView extends TabPane {
 
         HBox buttonBox = new HBox(10, saveButton, previewButton);
 
-        // Info Label
+        //Info Label
         Label templateInfoLabel = new Label();
         templateInfoLabel.setStyle("-fx-text-fill: green; -fx-font-weight: bold;");
 
@@ -380,6 +379,9 @@ public class MerchantSettingsView extends TabPane {
         return label;
     }
 
+    /**
+     * Method to handle saving merchant settings changes
+     */
     private void handleSaveMerchantSettings() {
         MerchantSettings settings = controller.getMerchantSettings();
         settings.setCompanyName(companyNameField.getText());
@@ -428,6 +430,9 @@ public class MerchantSettingsView extends TabPane {
         }
     }
 
+    /**
+     * Shows template preview in styled dialog
+     */
     private void handlePreviewTemplate(String templateType) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Template Preview");

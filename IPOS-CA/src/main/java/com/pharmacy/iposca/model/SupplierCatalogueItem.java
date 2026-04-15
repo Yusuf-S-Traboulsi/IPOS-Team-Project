@@ -2,6 +2,9 @@ package com.pharmacy.iposca.model;
 
 import javafx.beans.property.*;
 
+/**
+ * Class representing a supplier catalogue item.
+ */
 public class SupplierCatalogueItem {
     private final StringProperty itemId = new SimpleStringProperty();
     private final StringProperty description = new SimpleStringProperty();
@@ -27,6 +30,7 @@ public class SupplierCatalogueItem {
         this.category.set(category);
     }
 
+    //Getters
     public String getItemId() { return itemId.get(); }
     public String getDescription() { return description.get(); }
     public String getPackageType() { return packageType.get(); }
