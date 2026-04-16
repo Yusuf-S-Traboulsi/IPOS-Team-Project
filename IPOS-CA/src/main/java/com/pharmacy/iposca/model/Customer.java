@@ -140,14 +140,12 @@ public class Customer {
             return discountRate.get();
         } else if ("FLEXIBLE".equals(discountPlanType.get())) {
             double monthlyTotal = monthlyPurchaseTotal.get();
-            if (monthlyTotal >= 1000.0) {
-                return 0.15;
-            } else if (monthlyTotal >= 500.0) {
-                return 0.10;
-            } else if (monthlyTotal >= 200.0) {
-                return 0.05;
-            } else {
+            if (monthlyTotal > 2000.0) {
+                return 0.03;
+            } else if (monthlyTotal >= 1000.0) {
                 return 0.02;
+            } else {
+                return 0.01;
             }
         }
         return 0.0;
