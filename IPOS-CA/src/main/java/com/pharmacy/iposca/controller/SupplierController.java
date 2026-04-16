@@ -255,7 +255,6 @@ public class SupplierController {
         System.out.println("Marking order " + orderId + " as delivered");
         String sql = "UPDATE supplier_orders SET status = 'Delivered', delivered_date = ? WHERE order_id = ?";
 
-        //Updates order status to delivered
         try (Connection conn = DatabaseConnector.getSAConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -266,17 +265,16 @@ public class SupplierController {
 
             if (rowsAffected > 0) {
                 System.out.println("Order status updated to Delivered");
-                boolean inventoryUpdated = updateInventoryFromOrder(orderId);
 
-                //syncing inventory with the database
+                boolean inventoryUpdated = updateInventoryFromOrder(orderId);
+                loadOrders();
+
                 if (inventoryUpdated) {
                     System.out.println("Order " + orderId + " marked as delivered - Inventory updated");
-                    loadOrders();
                     return true;
                 } else {
                     System.out.println("Order marked as delivered but inventory update failed");
-                    loadOrders();
-                    return true;
+                    return false;
                 }
             }
 
@@ -287,7 +285,6 @@ public class SupplierController {
 
         return false;
     }
-
     public boolean markOrderAsPaid(String orderId) {
         System.out.println("Marking order " + orderId + " as paid");
         String updateOrderSql = "UPDATE supplier_orders SET payment_status = 'Paid', paid_date = ? WHERE order_id = ?";
@@ -331,69 +328,99 @@ public class SupplierController {
     }
 
     private boolean updateInventoryFromOrder(String orderId) {
-        String getItemsSql = "SELECT * FROM supplier_order_items WHERE order_id = ?";
-        String updateProductSql = "UPDATE products SET stock = stock + ? WHERE name = ?";
+        String getItemsSql = """
+        SELECT soi.item_id,
+               soi.description,
+               soi.quantity,
+               COALESCE(sc.units_per_pack, 1) AS units_per_pack
+        FROM supplier_order_items soi
+        LEFT JOIN supplier_catalogue sc
+               ON sc.item_id = soi.item_id
+        WHERE soi.order_id = ?
+        """;
 
-        try (Connection conn = DatabaseConnector.getSAConnection();
+        String updateProductSql = """
+        UPDATE products
+        SET stock = stock + ?
+        WHERE REPLACE(supplier_item_id, ' ', '') = REPLACE(?, ' ', '')
+        """;
+
+        try (Connection connSA = DatabaseConnector.getSAConnection();
              Connection connCA = DatabaseConnector.getConnection();
-             PreparedStatement getItemStmt = conn.prepareStatement(getItemsSql);
+             PreparedStatement getItemStmt = connSA.prepareStatement(getItemsSql);
              PreparedStatement updateStmt = connCA.prepareStatement(updateProductSql)) {
 
             getItemStmt.setString(1, orderId);
 
-            //processes the order items and updates the inventory accordingly
+            int itemsUpdated = 0;
+
             try (ResultSet rs = getItemStmt.executeQuery()) {
-                int itemsUpdated = 0;
-
                 while (rs.next()) {
-                    String supplierDescription = rs.getString("description"); //checks supplier description for product
-                    int quantityDelivered = rs.getInt("quantity"); //checks quantity delivered for product
+                    String itemId = rs.getString("item_id");
+                    String description = rs.getString("description");
+                    int packQuantity = rs.getInt("quantity");
+                    int unitsPerPack = rs.getInt("units_per_pack");
 
-                    System.out.println("  Processing: " + supplierDescription + " x " + quantityDelivered);
-
-                    //Maps the supplier description to the product name and updates the stock in database
-                    String productName = mapSupplierItemToProductName(supplierDescription); //this binds the product name to the prepared statement
-
-                    //Updating the stock when a matching product is found
-                    if (productName != null && !productName.isEmpty()) {
-                        updateStmt.setInt(1, quantityDelivered); //this binds the quantity delivered to the prepared statement
-                        updateStmt.setString(2, productName); //this binds the product name to the prepared statement
-
-                        //Executes the stock update
-                        int rowsAffected = updateStmt.executeUpdate();
-
-                        //Refreshing the local memory when the stock is updated
-                        if (rowsAffected > 0) {
-                            itemsUpdated++;
-                            System.out.println("Added " + quantityDelivered + " units to product: " + productName);
-                            updateLocalInventoryCache(productName, quantityDelivered);
-
-                        //Product was not found in the database
-                        } else {
-                            System.out.println("Product '" + productName + "' not found in products table");
-                        }
-
-                    //Supplier description doesn't match any product name in the database
-                    } else {
-                        System.out.println("Could not map supplier item '" + supplierDescription + "' to product");
+                    if (unitsPerPack <= 0) {
+                        unitsPerPack = 1;
                     }
-                }
 
-                if (itemsUpdated > 0) {
-                    InventoryController.getInstance().refreshProducts();
-                    System.out.println("Inventory refreshed - " + itemsUpdated + " items updated");
-                    return true;
-                } else {
-                    System.out.println("No items were updated in inventory");
-                    return false;
+                    int deliveredUnits = packQuantity * unitsPerPack;
+
+                    System.out.println("Processing delivered item: " + itemId +
+                            " | " + description +
+                            " | packs=" + packQuantity +
+                            " | units/pack=" + unitsPerPack +
+                            " | stock increase=" + deliveredUnits);
+
+                    updateStmt.setInt(1, deliveredUnits);
+                    updateStmt.setString(2, itemId);
+
+                    int rowsAffected = updateStmt.executeUpdate();
+
+                    if (rowsAffected > 0) {
+                        itemsUpdated++;
+                        updateLocalInventoryCacheBySupplierItemId(itemId, deliveredUnits);
+                        System.out.println("Updated inventory for supplier item " + itemId +
+                                " by +" + deliveredUnits);
+                    } else {
+                        System.out.println("No product matched supplier_item_id: " + itemId);
+                    }
                 }
             }
 
-        //Logging any errors that occur during the stock update process
+            if (itemsUpdated > 0) {
+                InventoryController.getInstance().refreshProducts();
+                System.out.println("Inventory refreshed - " + itemsUpdated + " item(s) updated");
+                return true;
+            } else {
+                System.out.println("No inventory rows were updated for order " + orderId);
+                return false;
+            }
+
         } catch (SQLException e) {
             System.err.println("Error updating inventory from order: " + e.getMessage());
             e.printStackTrace();
             return false;
+        }
+    }
+
+
+    private void updateLocalInventoryCacheBySupplierItemId(String supplierItemId, int quantityToAdd) {
+        try {
+            InventoryController inventory = InventoryController.getInstance();
+            for (Product p : inventory.getProducts()) {
+                String productSupplierItemId = p.getSupplierItemId();
+                if (productSupplierItemId != null &&
+                        productSupplierItemId.replace(" ", "").equalsIgnoreCase(supplierItemId.replace(" ", ""))) {
+                    p.setStock(p.getStock() + quantityToAdd);
+                    System.out.println("Local cache updated: " + p.getName() +
+                            " stock = " + p.getStock());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error updating local inventory cache: " + e.getMessage());
         }
     }
 
