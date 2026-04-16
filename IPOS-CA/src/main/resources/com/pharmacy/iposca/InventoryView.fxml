@@ -12,7 +12,12 @@
         <TextField fx:id="vatField" prefWidth="60" />
     </HBox>
 
-    <TextField fx:id="searchField" promptText="Search by ID or Name..." />
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="searchField" promptText="Search by ID or Name..." HBox.hgrow="ALWAYS" />
+        <Label text="Stock Filter:" />
+        <ComboBox fx:id="stockFilter" prefWidth="150" />
+        <Button text="Refresh" onAction="#handleRefresh" style="-fx-background-color: #3498db; -fx-text-fill: white;" />
+    </HBox>
 
     <TableView fx:id="inventoryTable" editable="true" VBox.vgrow="ALWAYS">
         <columns>
@@ -25,6 +30,8 @@
             <TableColumn fx:id="thresholdCol" text="Min Threshold" prefWidth="100" />
         </columns>
     </TableView>
+
+    <Label fx:id="informationLabel" textFill="black" />
 
     <HBox spacing="10" alignment="CENTER_RIGHT">
         <Button text="Generate Low Stock Report" onAction="#generateLowStockReport" style="-fx-background-color: #34495e; -fx-text-fill: white;" />
