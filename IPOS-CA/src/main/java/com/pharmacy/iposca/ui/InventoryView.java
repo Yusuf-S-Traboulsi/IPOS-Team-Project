@@ -32,12 +32,16 @@ public class InventoryView {
     @FXML private TableColumn<Product, String> nameCol;
     @FXML private TableColumn<Product, Double> bulkCostCol, markupCol, priceCol;
     @FXML private Label informationLabel;
+    @FXML private ComboBox<String> stockFilter;
 
     private InventoryController logic = InventoryController.getInstance();
 
     @FXML
     public void initialize() {
         inventoryTable.setEditable(true);
+
+        stockFilter.getItems().addAll("ALL", "LOW STOCK");
+        stockFilter.setValue("ALL");
 
         //VAT Listener
         vatField.setText(String.valueOf(logic.getVatRate()));
@@ -166,13 +170,50 @@ public class InventoryView {
      */
     private void setupSearchAndStyle() {
         FilteredList<Product> filteredData = new FilteredList<>(logic.getProducts(), p -> true);
-        searchField.textProperty().addListener((obs, old, newVal) -> {
-            filteredData.setPredicate(p -> newVal == null || newVal.isEmpty() ||
-                    p.getName().toLowerCase().contains(newVal.toLowerCase()) ||
-                    String.valueOf(p.getId()).equals(newVal));
-        });
-        inventoryTable.setItems(filteredData);
 
+        Runnable applyFilter = () -> {
+            //Retrieve search text and selected stock filter
+            String searchText = searchField.getText();
+            String selectedStockFilter = stockFilter.getValue();
+
+            //Updates the filter based on search text and stock filter
+            filteredData.setPredicate(product -> {
+                if (product == null) return false; //ignores empty products
+
+                boolean matchesSearch = true;
+                //Checks product name or ID against search text
+                if (searchText != null && !searchText.trim().isEmpty()) {
+                    String lower = searchText.toLowerCase().trim();
+
+                    //Checking product name matches or ID matches
+                    matchesSearch =
+                            product.getName().toLowerCase().contains(lower) ||
+                                    String.valueOf(product.getId()).contains(lower);
+                }
+
+                boolean matchesStockFilter = true;
+                if (selectedStockFilter != null) {
+                    switch (selectedStockFilter) {
+                        //Generating a list below lower bound for stock filter
+                        case "LOW STOCK":
+                            matchesStockFilter = product.getStock() <= product.getLowStockThreshold();
+                            break;
+                        case "ALL":
+                        default:
+                            matchesStockFilter = true; //This shows all the products
+                            break;
+                    }
+                }
+                return matchesSearch && matchesStockFilter;
+            });
+        };
+
+        //Filters the data when the search field or stock filter changes
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> applyFilter.run());
+        stockFilter.valueProperty().addListener((obs, oldVal, newVal) -> applyFilter.run());
+
+        applyFilter.run();
+        inventoryTable.setItems(filteredData); //Sets the filtered data to the table
         inventoryTable.setRowFactory(tv -> new TableRow<Product>() {
             @Override
             protected void updateItem(Product item, boolean empty) {
@@ -391,7 +432,10 @@ public class InventoryView {
     private void handleRefresh() {
         logic.refreshProducts();
         inventoryTable.refresh();
-        informationLabel.setText("Inventory refreshed from database");
-        informationLabel.setStyle("-fx-text-fill: green;");
+
+        if (informationLabel != null) {
+            informationLabel.setText("Inventory refreshed from database");
+            informationLabel.setStyle("-fx-text-fill: green;");
+        }
     }
 }
