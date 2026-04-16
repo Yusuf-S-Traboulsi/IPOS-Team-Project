@@ -61,32 +61,33 @@ public class PortalOrdersView {
 
         // Action Button Column (Fulfil Order)
         colAction.setCellFactory(param -> new TableCell<OnlineOrder, Void>() {
-            private final Button fulfilBtn = new Button("Fulfil Order");
+            private final Button fulfilBtn = new Button();
 
             {
                 fulfilBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 10px; -fx-cursor: hand;");
                 fulfilBtn.setOnAction(event -> {
                     OnlineOrder order = getTableView().getItems().get(getIndex());
-                    handleMarkDelivered(order);
+                    handleAdvanceOrderStatus(order);
                 });
             }
 
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
+
+                if (empty || getIndex() < 0 || getIndex() >= getTableView().getItems().size()) {
+                    setGraphic(null);
+                    return;
+                }
+
+                OnlineOrder order = getTableView().getItems().get(getIndex());
+                String nextStatus = getNextStatus(order.getStatus());
+
+                if (nextStatus == null) {
                     setGraphic(null);
                 } else {
-                    OnlineOrder order = getTableView().getItems().get(getIndex());
-
-                    // Show button for all statuses except 'Delivered'
-                    if (!"Delivered".equals(order.getStatus())) {
-                        fulfilBtn.setVisible(true);
-                        fulfilBtn.setDisable(false);
-                    } else {
-                        fulfilBtn.setVisible(false);
-                        fulfilBtn.setDisable(true);
-                    }
+                    fulfilBtn.setText(getActionButtonText(order.getStatus()));
+                    fulfilBtn.setDisable(false);
                     setGraphic(fulfilBtn);
                 }
             }
@@ -133,27 +134,80 @@ public class PortalOrdersView {
     /**
      Confirms delivery action then marks the order as delivered
      */
-    private void handleMarkDelivered(OnlineOrder order) {
+    private void handleAdvanceOrderStatus(OnlineOrder order) {
+        String currentStatus = order.getStatus();
+        String nextStatus = getNextStatus(currentStatus);
+
+        if (nextStatus == null) {
+            Alert info = new Alert(Alert.AlertType.INFORMATION);
+            info.setTitle("Order Complete");
+            info.setHeaderText(null);
+            info.setContentText("This order is already marked as Delivered.");
+            info.showAndWait();
+            return;
+        }
+
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Fulfil Order");
-        confirm.setHeaderText("Mark Order #" + order.getOrderId().substring(0, 8) + "..." + " as Delivered");
-        confirm.setContentText("This will update the order status to 'Delivered'.");
+        confirm.setTitle("Update Order Status");
+        confirm.setHeaderText("Update Order " + order.getOrderId().substring(0, 8) + " to " + nextStatus);
+        confirm.setContentText("This will update the order status from '" + currentStatus + "' to '" + nextStatus + "'.");
+
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                if (puLogic.markAsDelivered(order.getOrderId())) {
-                    order.setStatus("Delivered");
+                boolean success = puLogic.updateOrderStatus(order.getOrderId(), nextStatus);
+
+                if (success) {
+                    order.setStatus(nextStatus);
                     ordersTable.refresh();
-                    Alert success = new Alert(Alert.AlertType.INFORMATION);
-                    success.setTitle("Success");
-                    success.setContentText("Order marked as delivered successfully.");
-                    success.showAndWait();
+
+                    Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                    successAlert.setTitle("Success");
+                    successAlert.setHeaderText(null);
+                    successAlert.setContentText("Order status updated to '" + nextStatus + "' successfully.");
+                    successAlert.showAndWait();
                 } else {
                     Alert error = new Alert(Alert.AlertType.ERROR);
                     error.setTitle("Error");
+                    error.setHeaderText(null);
                     error.setContentText("Failed to update order status in database.");
                     error.showAndWait();
                 }
             }
         });
+    }
+
+    private String getNextStatus(String currentStatus) {
+        if (currentStatus == null) return null;
+
+        switch (currentStatus.trim().toUpperCase()) {
+            case "PENDING":
+                return "Ready for Shipment";
+            case "READY FOR SHIPMENT":
+                return "Shipped";
+            case "SHIPPED":
+                return "Delivered";
+            case "DELIVERED":
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    private String getActionButtonText(String currentStatus) {
+        String nextStatus = getNextStatus(currentStatus);
+        if (nextStatus == null) {
+            return "Completed";
+        }
+
+        switch (nextStatus.toUpperCase()) {
+            case "READY FOR SHIPMENT":
+                return "Prepare Shipment";
+            case "SHIPPED":
+                return "Mark Shipped";
+            case "DELIVERED":
+                return "Mark Delivered";
+            default:
+                return "Update Status";
+        }
     }
 }
