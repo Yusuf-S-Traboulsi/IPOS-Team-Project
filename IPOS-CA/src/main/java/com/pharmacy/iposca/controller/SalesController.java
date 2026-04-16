@@ -197,9 +197,15 @@ public class SalesController {
         Integer customerId = (c != null) ? c.getId() : null;
         String customerName = (c != null) ? c.getName() : "Walk-in Customer";
         boolean isAccountHolder = (c != null);
-        double vatRate = inventoryController.getVatRate();
+
+        /*double vatRate = inventoryController.getVatRate();
         double netAmount = finalAmount / (1 + vatRate);
         double vatAmount = finalAmount - netAmount;
+        */
+
+        double vatRate = inventoryController.getVatRate();
+        double vatAmount = finalAmount - (finalAmount / (1 + vatRate));
+
 
         String sql = "INSERT INTO sales (id, customer_id, customer_name, is_account_holder, " +
                 "total_before_discount, discount_rate, discount_amount, total_after_discount, " +
@@ -242,24 +248,41 @@ public class SalesController {
         int invoiceNum = 100000 + new Random().nextInt(900000);
         File file = new File("Invoice_" + invoiceNum + ".html");
         StringBuilder html = new StringBuilder();
+
         double vatRate = inventoryController.getVatRate();
-        double grossTotal = calculateTotal(); //Total before VAT
-        double netTotal = grossTotal / (1 + vatRate); //extracts net from gross
-        double vatAmount = grossTotal - netTotal; //calculates VAT amount
+
+        // Calculate totals consistently with processSale()
+        double totalBeforeDiscount = calculateTotal();
+        double discountRate = 0.0;
+        double discountAmount = 0.0;
+        double totalAfterDiscount = totalBeforeDiscount;
+        double finalAmount = totalAfterDiscount;
+
+        if (c != null) {
+            discountRate = c.calculateEffectiveDiscountRate();
+            discountAmount = totalBeforeDiscount * discountRate;
+            totalAfterDiscount = totalBeforeDiscount - discountAmount;
+            finalAmount = totalAfterDiscount;
+        }
+
+        // VAT shown is informational only: VAT portion already included in finalAmount
+        double vatAmount = finalAmount - (finalAmount / (1 + vatRate));
 
         LocalDate now = LocalDate.now();
         String dateStr = now.format(DateTimeFormatter.ofPattern("d MMMM yyyy"));
+
         String customerLastName = "Customer";
         String customerTitle = "Mr.";
+
         if (c != null) {
             String[] nameParts = c.getName().trim().split("\\s+");
             customerLastName = nameParts[nameParts.length - 1];
             customerTitle = c.getTitle() != null ? c.getTitle() : "Mr.";
         }
+
         MerchantSettingsController settingsController = MerchantSettingsController.getInstance();
         com.pharmacy.iposca.model.MerchantSettings settings = settingsController.getMerchantSettings();
 
-        // HTML Header and body for the invoice
         html.append("<!DOCTYPE html>\n<html lang='en'>\n<head>\n<meta charset='UTF-8'>\n");
         html.append("<style>\n");
         html.append("  * { margin: 0; padding: 0; box-sizing: border-box; }\n");
@@ -286,7 +309,7 @@ public class SalesController {
         html.append("  @media print { body { background: white; padding: 0; } .invoice-container { box-shadow: none; padding: 40px; } }\n");
         html.append("</style>\n</head>\n<body>\n<div class='invoice-container'>\n");
 
-        //Header section
+        // Header
         html.append("<div class='header-section'>\n<div class='customer-address'>\n");
         if (c != null) {
             html.append(customerTitle).append(". ").append(c.getName()).append(",<br>\n");
@@ -305,27 +328,61 @@ public class SalesController {
         html.append("Fax: ").append(settings != null && settings.getFax() != null ? settings.getFax() : "0208 778 0125").append("\n");
         html.append("</div>\n</div>\n");
 
-        html.append("<div class='invoice-date'>").append(dateStr).append("</div>\n"); //Invoice date
+        html.append("<div class='invoice-date'>").append(dateStr).append("</div>\n");
         html.append("<div class='salutation'>Dear ").append(customerTitle).append(". ").append(customerLastName).append(",</div>\n");
-        html.append("<div class='invoice-title'>INVOICE NO.: ").append(invoiceNum).append("</div>\n"); //Invoice title
+        html.append("<div class='invoice-title'>INVOICE NO.: ").append(invoiceNum).append("</div>\n");
 
-        //Account Number
         if (c != null) {
-            html.append("<div class='account-no'>Account No: CSM").append(String.format("%06d", c.getId())).append("</div>\n");
+            html.append("<div class='account-no'>Account No: CSM")
+                    .append(String.format("%06d", c.getId()))
+                    .append("</div>\n");
         }
 
-        html.append("<table>\n<thead>\n<tr>\n<th>Item ID</th>\n<th>Packages</th>\n<th>Package Cost, £</th>\n<th>Amount, £</th>\n</tr>\n</thead>\n<tbody>\n");
+        html.append("<table>\n<thead>\n<tr>\n");
+        html.append("<th>Item ID</th>\n<th>Packages</th>\n<th>Package Cost, £</th>\n<th>Amount, £</th>\n");
+        html.append("</tr>\n</thead>\n<tbody>\n");
+
         for (SalesController.CartItem item : cart) {
             double lineAmount = item.getPrice() * item.getQuantity();
-            html.append("<tr>\n<td>").append(item.getName()).append("</td>\n<td>").append(item.getQuantity()).append("</td>\n<td>").append(String.format("%.2f", item.getPrice())).append("</td>\n<td>").append(String.format("%.2f", lineAmount)).append("</td>\n</tr>\n");
+            html.append("<tr>\n<td>")
+                    .append(item.getName())
+                    .append("</td>\n<td>")
+                    .append(item.getQuantity())
+                    .append("</td>\n<td>")
+                    .append(String.format("%.2f", item.getPrice()))
+                    .append("</td>\n<td>")
+                    .append(String.format("%.2f", lineAmount))
+                    .append("</td>\n</tr>\n");
         }
+
         html.append("</tbody>\n</table>\n");
 
-        html.append("<table class='totals-section'>\n<tr>\n<td class='label'>Total</td>\n<td class='value'>").append(String.format("%.2f", grossTotal)).append("</td>\n</tr>\n");
-        html.append("<tr>\n<td class='label'>VAT @ ").append(String.format("%.1f", vatRate * 100)).append("%</td>\n<td class='value'>").append(String.format("%.2f", vatAmount)).append("</td>\n</tr>\n");
-        html.append("<tr>\n<td class='label final'>Amount Due</td>\n<td class='value final'>").append(String.format("%.2f", grossTotal)).append("</td>\n</tr>\n</table>\n");
+        html.append("<table class='totals-section'>\n");
 
-        //Footer text, uses the template from database
+        html.append("<tr>\n<td class='label'>Total</td>\n<td class='value'>")
+                .append(String.format("%.2f", totalBeforeDiscount))
+                .append("</td>\n</tr>\n");
+
+        html.append("<tr>\n<td class='label'>Discount");
+        if (discountRate > 0) {
+            html.append(": ").append(String.format("%.1f", discountRate * 100)).append("%");
+        }
+        html.append("</td>\n<td class='value'>-")
+                .append(String.format("%.2f", discountAmount))
+                .append("</td>\n</tr>\n");
+
+        html.append("<tr>\n<td class='label'>VAT: ")
+                .append(String.format("%.1f", vatRate * 100))
+                .append("%</td>\n<td class='value'>")
+                .append(String.format("%.2f", vatAmount))
+                .append("</td>\n</tr>\n");
+
+        html.append("<tr>\n<td class='label final'>Amount Due</td>\n<td class='value final'>")
+                .append(String.format("%.2f", finalAmount))
+                .append("</td>\n</tr>\n");
+
+        html.append("</table>\n");
+
         html.append("<div class='footer-text'>\n");
         com.pharmacy.iposca.model.DocumentTemplate invoiceTemplate = settingsController.getTemplateByType("INVOICE");
         if (invoiceTemplate != null && invoiceTemplate.getFooterTemplate() != null) {
@@ -349,6 +406,7 @@ public class SalesController {
             System.err.println("Error generating invoice: " + e.getMessage());
             e.printStackTrace();
         }
+
         cart.clear();
         return file;
     }
