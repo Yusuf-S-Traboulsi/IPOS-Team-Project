@@ -59,11 +59,17 @@ public class DiscountSettingsView {
         customerCombo.setOnAction(e -> updateCustomerInfo()); //Update info when customer changes
 
 
+        // Disables rate field for NONE plan and Flexible plan
         planTypeCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
-            boolean disableRate = newVal == null || newVal.equalsIgnoreCase("NONE");
+            boolean disableRate =
+                    newVal == null
+                            || newVal.equalsIgnoreCase("NONE")
+                            || newVal.equalsIgnoreCase("FLEXIBLE");
             discountRateField.setDisable(disableRate);
 
-            if (disableRate) {
+            if (newVal == null || newVal.equalsIgnoreCase("NONE")) {
+                discountRateField.setText("0");
+            } else if (newVal.equalsIgnoreCase("FLEXIBLE")) {
                 discountRateField.setText("0");
             }
         });
@@ -128,7 +134,7 @@ public class DiscountSettingsView {
             return;
         }
         if (rate < 0.0 || rate > 1.0) {
-            showError("Discount rate must be between 0% and 100%");
+            showError("Invalid discount rate.");
             return;
         }
 
